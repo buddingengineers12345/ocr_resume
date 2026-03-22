@@ -60,7 +60,7 @@ run_cleanup() {
 }
 
 run_order_objects() {
-    "$PYTHON" "$SCRIPT_DIR/order_objects.py"
+    "$PYTHON" "$SCRIPT_DIR/ocr_pipeline/order_objects.py"
 }
 
 clean_dirs() {

@@ -28,7 +28,7 @@ from utils import (
 
 
 def order_objects() -> None:
-    """Reorder objects.csv by content.txt order, with structural objects at the end."""
+    """Reorder objects.csv: text (by content.txt), structural (y desc), then char."""
     if not OUTPUT_CSV.exists():
         print(f"[order_objects] CSV not found: {OUTPUT_CSV}")
         return
@@ -40,17 +40,20 @@ def order_objects() -> None:
     all_objects = read_csv_objects(OUTPUT_CSV)
     print(f"[order_objects] Loaded {len(all_objects)} objects from {OUTPUT_CSV.name}")
 
-    text_objects = [o for o in all_objects if o["object_type"] in ("text", "char")]
+    text_objects = [o for o in all_objects if o["object_type"] == "text"]
+    char_objects = [o for o in all_objects if o["object_type"] == "char"]
     structural_objects = [o for o in all_objects if o["object_type"] == "structural"]
-    n_text, n_struct = len(text_objects), len(structural_objects)
-    print(f"[order_objects] Text objects: {n_text}, Structural: {n_struct}")
+    print(
+        f"[order_objects] Text: {len(text_objects)}, "
+        f"Char: {len(char_objects)}, Structural: {len(structural_objects)}"
+    )
 
-    # Group objects by their text content to handle duplicates gracefully
+    # Group text objects by content to handle duplicates gracefully
     text_by_content: dict[str, list[dict]] = {}
     for obj in text_objects:
         text_by_content.setdefault(obj["text"], []).append(obj)
 
-    # Pull objects in reference order, consuming one instance per occurrence
+    # Pull text objects in reference order, consuming one instance per occurrence
     used_indices: dict[str, int] = {}
     ordered_text: list[dict] = []
     for ref_text in reference_order:
@@ -66,11 +69,15 @@ def order_objects() -> None:
         if id(obj) not in matched_set:
             ordered_text.append(obj)
 
-    reordered = ordered_text + structural_objects
+    # Structural objects sorted by y-coordinate descending (bottom of page first)
+    ordered_structural = sorted(structural_objects, key=lambda o: o["y"], reverse=True)
+
+    reordered = ordered_text + ordered_structural + char_objects
     write_csv_objects(reordered, OUTPUT_CSV)
     print(f"[order_objects] {len(reordered)} objects written to {OUTPUT_CSV.name}")
     print(f"  - Text objects (in content.txt order): {len(ordered_text)}")
-    print(f"  - Structural objects: {len(structural_objects)}")
+    print(f"  - Structural objects (y descending)  : {len(ordered_structural)}")
+    print(f"  - Char objects                       : {len(char_objects)}")
 
 
 if __name__ == "__main__":
