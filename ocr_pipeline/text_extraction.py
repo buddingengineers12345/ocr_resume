@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils import SCRIPT_DIR, OUTPUT_CSV, OUTPUT_DIR, find_image, update_csv_objects, GREEN, ensure_output_dir
+from utils import OUTPUT_CSV, OUTPUT_DIR, find_image, update_csv_objects, GREEN, ensure_output_dir
 
 
 def detect_text(image_path: Path) -> list:
@@ -70,7 +70,8 @@ def run():
     import cv2
     
     image_path = find_image()
-    csv_path   = SCRIPT_DIR / OUTPUT_CSV
+    ensure_output_dir()
+    csv_path   = OUTPUT_CSV
 
     print("[text_extraction] Running OCR (word-level) …")
     text_objects = detect_text(image_path)

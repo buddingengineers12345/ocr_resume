@@ -27,7 +27,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
-    SCRIPT_DIR, OUTPUT_DIR, OUTPUT_CSV,
+    OUTPUT_DIR, OUTPUT_CSV,
     GREEN, RED, BLUE,
     find_image, load_reference_words, normalize_text, read_csv_objects,
     ensure_output_dir,
@@ -87,7 +87,7 @@ def run(output_name: str = None):
     ensure_output_dir()
 
     image_path = find_image()
-    csv_path   = SCRIPT_DIR / OUTPUT_CSV
+    csv_path   = OUTPUT_CSV
 
     if not csv_path.exists():
         sys.exit(

@@ -20,7 +20,7 @@ TEMP_DIR       = SCRIPT_DIR / "temp"
 OUTPUT_DIR     = SCRIPT_DIR / "output"
 IMAGE_FILE     = "Page_1.png"
 CONTENT_FILE   = "content.txt"
-OUTPUT_CSV     = "objects.csv"
+OUTPUT_CSV     = OUTPUT_DIR / "objects.csv"
 
 # OpenCV BGR colours
 GREEN = (0, 255, 0)    # matched text

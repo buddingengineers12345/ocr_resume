@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import cv2
 import numpy as np
 
-from utils import SCRIPT_DIR, OUTPUT_CSV, OUTPUT_DIR, find_image, read_csv_objects
+from utils import OUTPUT_CSV, OUTPUT_DIR, find_image, read_csv_objects
 
 # ── Background colour estimation ──────────────────────────────────────────────
 
@@ -282,7 +282,7 @@ def create_side_by_side(original_path: Path, cleaned_path: Path) -> np.ndarray:
 def main():
     # ── Locate inputs ──────────────────────────────────────────────────────────
     image_path = find_image()
-    csv_path   = SCRIPT_DIR / OUTPUT_CSV
+    csv_path   = OUTPUT_CSV
 
     if not csv_path.exists():
         print(f"ERROR: objects.csv not found at {csv_path}")

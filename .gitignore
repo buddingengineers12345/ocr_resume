@@ -145,7 +145,6 @@ Thumbs.db
 
 # Project specific
 temp/
-output/
 *.zip
 *.tar.gz
 *.rar
@@ -158,4 +157,3 @@ output/
 image_reference/*.png
 output/*.png
 temp/
-

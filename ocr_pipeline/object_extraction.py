@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
-    SCRIPT_DIR, OUTPUT_DIR, OUTPUT_CSV,
+    OUTPUT_DIR, OUTPUT_CSV,
     find_image, read_csv_objects, update_csv_objects, overlaps_text,
     BLUE, ensure_output_dir,
 )
@@ -111,7 +111,8 @@ def run():
         image_path = find_image()
         print("[object_extraction] Using original image (text_cleaned.png not found)")
 
-    csv_path   = SCRIPT_DIR / OUTPUT_CSV
+    ensure_output_dir()
+    csv_path   = OUTPUT_CSV
 
     # Use existing text rows (if any) for overlap filtering
     existing   = read_csv_objects(csv_path) if csv_path.exists() else []

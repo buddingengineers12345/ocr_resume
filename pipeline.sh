@@ -17,7 +17,8 @@
 #   3. text_extraction.py (OCR text detection)
 #   4. text_cleanup.py (removes text regions when used in objects/full modes)
 #   5. object_extraction.py (detects structural elements; uses text_cleaned.png if available)
-#   6. image_annotation.py (draws bounding boxes on output image)
+#   6. order_objects.py (reorders objects.csv by content.txt order + structural)
+#   7. image_annotation.py (draws bounding boxes on output image)
 #
 # Each Python script can also be run individually:
 #   python extract_values.py
@@ -58,6 +59,10 @@ run_cleanup() {
     "$PYTHON" "$SCRIPT_DIR/ocr_pipeline/text_cleanup.py"
 }
 
+run_order_objects() {
+    "$PYTHON" "$SCRIPT_DIR/order_objects.py"
+}
+
 clean_dirs() {
     echo "[clean] Removing temp/ and output/ folders …"
     rm -rf "$SCRIPT_DIR/temp" "$SCRIPT_DIR/output"
@@ -88,6 +93,7 @@ case "$MODE" in
         run_step text_extraction.py
         run_cleanup
         run_step object_extraction.py
+        run_order_objects
         run_annotate annotated_objects.png
         ;;
 
@@ -99,6 +105,7 @@ case "$MODE" in
         run_step text_extraction.py
         run_cleanup
         run_step object_extraction.py
+        run_order_objects
         run_annotate annotated_full.png
         ;;
 
