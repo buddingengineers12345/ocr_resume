@@ -343,39 +343,6 @@ def main():
     cv2.imwrite(str(cleaned_path), cleaned)
     print(f"Saved : {cleaned_path}")
 
-    # ── Create and save overlay image ─────────────────────────────────────────
-    print("Creating overlay image...")
-    overlay = create_overlay(image_path, cleaned_path, alpha=0.5)
-    
-    if overlay is not None:
-        overlay_path = OUTPUT_DIR / "text_cleaned_overlay.png"
-        cv2.imwrite(str(overlay_path), overlay)
-        print(f"Saved : {overlay_path}")
-    else:
-        print("WARNING: Failed to create overlay image.")
-
-    # ── Create and save diff image ────────────────────────────────────────────
-    print("Creating diff comparison image...")
-    diff_image = create_diff_image(image_path, cleaned_path)
-    
-    if diff_image is not None:
-        diff_path = OUTPUT_DIR / "text_cleanup_diff.png"
-        cv2.imwrite(str(diff_path), diff_image)
-        print(f"Saved : {diff_path}")
-    else:
-        print("WARNING: Failed to create diff image.")
-
-    # ── Create and save side-by-side comparison ───────────────────────────────
-    print("Creating side-by-side comparison...")
-    side_by_side = create_side_by_side(image_path, cleaned_path)
-    
-    if side_by_side is not None:
-        side_by_side_path = OUTPUT_DIR / "text_cleanup_comparison.png"
-        cv2.imwrite(str(side_by_side_path), side_by_side)
-        print(f"Saved : {side_by_side_path}")
-    else:
-        print("WARNING: Failed to create side-by-side comparison.")
-
 
 if __name__ == "__main__":
     main()

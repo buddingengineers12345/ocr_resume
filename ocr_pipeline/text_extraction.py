@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils import SCRIPT_DIR, OUTPUT_CSV, find_image, update_csv_objects
+from utils import SCRIPT_DIR, OUTPUT_CSV, OUTPUT_DIR, find_image, update_csv_objects, GREEN, ensure_output_dir
 
 
 def detect_text(image_path: Path) -> list:
@@ -67,6 +67,8 @@ def detect_text(image_path: Path) -> list:
 
 
 def run():
+    import cv2
+    
     image_path = find_image()
     csv_path   = SCRIPT_DIR / OUTPUT_CSV
 
@@ -76,6 +78,28 @@ def run():
 
     update_csv_objects(text_objects, "text", csv_path)
     print(f"[text_extraction] CSV updated → {csv_path.name}")
+    
+    # Visualize and save detected text boxes
+    ensure_output_dir()
+    image_bgr = cv2.imread(str(image_path))
+    if image_bgr is not None:
+        vis = image_bgr.copy()
+        THICKNESS = 2
+        FONT = cv2.FONT_HERSHEY_SIMPLEX
+        FONT_SCALE = 0.35
+        FONT_THICK = 1
+        
+        for obj in text_objects:
+            x, y, w, h = obj["x"], obj["y"], obj["w"], obj["h"]
+            cv2.rectangle(vis, (x, y), (x + w, y + h), GREEN, THICKNESS)
+            cv2.putText(
+                vis, obj["text"], (x, max(y - 3, 10)),
+                FONT, FONT_SCALE, GREEN, FONT_THICK, cv2.LINE_AA,
+            )
+        
+        out_path = OUTPUT_DIR / "text_detected.png"
+        cv2.imwrite(str(out_path), vis)
+        print(f"[text_extraction] Saved visualization → {out_path.name}")
 
 
 if __name__ == "__main__":

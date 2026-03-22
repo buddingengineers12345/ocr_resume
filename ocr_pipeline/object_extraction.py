@@ -25,53 +25,48 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils import (
     SCRIPT_DIR, OUTPUT_DIR, OUTPUT_CSV,
     find_image, read_csv_objects, update_csv_objects, overlaps_text,
+    BLUE, ensure_output_dir,
 )
 
 
 def detect_structural(image_bgr, text_boxes: list) -> list:
     """
-    Detect structural elements via morphological line extraction + contour analysis.
+    Detect structural elements via adaptive thresholding and edge detection.
 
     Strategy:
-      1. Binarise (inverted so ink = white).
-      2. Isolate horizontal lines with a wide, 1-pixel-tall kernel.
-      3. Isolate vertical lines with a tall, 1-pixel-wide kernel.
-      4. Combine and dilate to merge close fragments.
-      5. Find contours; discard those dominated by text regions.
+      1. Convert to grayscale.
+      2. Apply adaptive threshold (better separation for varying lighting).
+      3. Light morphology to remove noise without merging objects.
+      4. Apply Canny edge detection to preserve boundaries.
+      5. Combine region and edge info.
+      6. Find contours; discard those dominated by text regions.
 
     Returns a list of dicts: {object_type, text, x, y, w, h}.
     """
     import cv2
+    import numpy as np
 
     gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
 
-    # Otsu binarisation – inverted (structural marks become white)
-    _, binary = cv2.threshold(
-        gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
+    # Adaptive threshold (better separation than fixed Otsu)
+    thresh = cv2.adaptiveThreshold(
+        gray, 255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY_INV,
+        11, 2
     )
 
-    img_h, img_w = binary.shape
+    # Light morphology (remove noise, don't merge objects)
+    kernel = np.ones((2, 2), np.uint8)
+    clean = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel, iterations=1)
 
-    # Horizontal lines
-    h_len    = max(40, img_w // 20)
-    h_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (h_len, 1))
-    h_lines  = cv2.morphologyEx(binary, cv2.MORPH_OPEN, h_kernel, iterations=2)
+    # Edge detection (preserve boundaries)
+    edges = cv2.Canny(gray, 50, 150)
 
-    # Vertical lines
-    v_len    = max(40, img_h // 20)
-    v_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, v_len))
-    v_lines  = cv2.morphologyEx(binary, cv2.MORPH_OPEN, v_kernel, iterations=2)
+    # Combine region + edge info
+    combined = cv2.bitwise_or(clean, edges)
 
-    # Closed rectangular shapes (boxes) – combine H + V then dilate to close gaps
-    box_mask    = cv2.add(h_lines, v_lines)
-    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    box_mask    = cv2.dilate(box_mask, rect_kernel, iterations=2)
-
-    # Merge all structural masks
-    combined   = cv2.add(h_lines, cv2.add(v_lines, box_mask))
-    dil_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    combined   = cv2.dilate(combined, dil_kernel, iterations=1)
-
+    # Find contours
     contours, _ = cv2.findContours(
         combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
@@ -80,11 +75,21 @@ def detect_structural(image_bgr, text_boxes: list) -> list:
 
     objects = []
     for cnt in contours:
+        area = cv2.contourArea(cnt)
+
+        # Filter very small noise
+        if area < 20:
+            continue
+
         x, y, w, h = cv2.boundingRect(cnt)
-        if max(w, h) < MIN_SPAN:
+
+        # Optional: filter very large region (sidebar/page edge)
+        if w > 0.9 * image_bgr.shape[1] and h > 0.9 * image_bgr.shape[0]:
             continue
-        if overlaps_text(x, y, w, h, text_boxes):
+
+        if overlaps_text(x, y, w, h, text_boxes, threshold=0.5):
             continue
+
         objects.append({
             "object_type": "structural",
             "text": "",
@@ -122,6 +127,26 @@ def run():
 
     update_csv_objects(structural_objects, "structural", csv_path)
     print(f"[object_extraction] CSV updated → {csv_path.name}")
+    
+    # Visualize and save detected structural objects
+    ensure_output_dir()
+    vis = image_bgr.copy()
+    THICKNESS = 2
+    FONT = cv2.FONT_HERSHEY_SIMPLEX
+    FONT_SCALE = 0.35
+    FONT_THICK = 1
+    
+    for obj in structural_objects:
+        x, y, w, h = obj["x"], obj["y"], obj["w"], obj["h"]
+        cv2.rectangle(vis, (x, y), (x + w, y + h), BLUE, THICKNESS)
+        cv2.putText(
+            vis, "structural", (x, max(y - 3, 10)),
+            FONT, FONT_SCALE, BLUE, FONT_THICK, cv2.LINE_AA,
+        )
+    
+    out_path = OUTPUT_DIR / "object_detected.png"
+    cv2.imwrite(str(out_path), vis)
+    print(f"[object_extraction] Saved visualization → {out_path.name}")
 
 
 if __name__ == "__main__":
