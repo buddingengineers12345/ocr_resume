@@ -12,6 +12,8 @@ how or where they are invoked.
 import csv
 from pathlib import Path
 
+import numpy as np
+
 # ── Configuration ──────────────────────────────────────────────────────────────
 # Workspace root = parent of the ocr_pipeline/ package directory
 SCRIPT_DIR = Path(__file__).parent.parent.resolve()
@@ -27,7 +29,7 @@ GREEN = (0, 255, 0)  # matched text
 RED = (0, 0, 255)  # unmatched text
 BLUE = (255, 0, 0)  # structural objects
 
-CSV_FIELDNAMES = ["object_type", "text", "x", "y", "width", "height"]
+CSV_FIELDNAMES = ["object_type", "text", "x", "y", "width", "height", "color", "bg_color"]
 
 
 # ── Output directory ──────────────────────────────────────────────────────────
@@ -175,6 +177,8 @@ def read_csv_objects(csv_path: Path) -> list[dict]:
                     "y": int(row["y"]),
                     "w": int(row["width"]),
                     "h": int(row["height"]),
+                    "color": row.get("color", ""),
+                    "bg_color": row.get("bg_color", ""),
                 }
             )
     return objects
@@ -194,8 +198,94 @@ def write_csv_objects(objects: list[dict], csv_path: Path) -> None:
                     "y": obj["y"],
                     "width": obj["w"],
                     "height": obj["h"],
+                    "color": obj.get("color", ""),
+                    "bg_color": obj.get("bg_color", ""),
                 }
             )
+
+
+# ── Colour extraction helpers ─────────────────────────────────────────────────
+
+
+def bgr_to_hex(bgr: tuple) -> str:
+    """Convert a BGR tuple to a hex colour string ``#RRGGBB``."""
+    b, g, r = int(bgr[0]), int(bgr[1]), int(bgr[2])
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+
+def _dominant_color(pixels: np.ndarray) -> tuple:
+    """Return the most frequent BGR colour in a (N, 3) uint8 pixel array."""
+    encoded = (
+        pixels[:, 0].astype(np.uint32)
+        | (pixels[:, 1].astype(np.uint32) << 8)
+        | (pixels[:, 2].astype(np.uint32) << 16)
+    )
+    unique, counts = np.unique(encoded, return_counts=True)
+    dominant = unique[np.argmax(counts)]
+    return (
+        int(dominant & 0xFF),
+        int((dominant >> 8) & 0xFF),
+        int((dominant >> 16) & 0xFF),
+    )
+
+
+def estimate_colors(
+    image_bgr: np.ndarray,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    margin: int = 8,
+    fg_threshold: float = 30.0,
+) -> tuple[str, str]:
+    """Estimate foreground (color) and background (bg_color) for a bounding box.
+
+    Background is the dominant colour of the outer-margin pixels surrounding
+    the box (IQR-filtered).  Foreground is the dominant colour among interior
+    pixels whose Euclidean distance from the estimated background exceeds
+    *fg_threshold*.
+
+    Returns ``(color_hex, bg_color_hex)`` — both as ``#RRGGBB`` strings.
+    """
+    img_h, img_w = image_bgr.shape[:2]
+
+    # ── Background ────────────────────────────────────────────────────────────
+    ox1, oy1 = max(x - margin, 0), max(y - margin, 0)
+    ox2, oy2 = min(x + w + margin, img_w), min(y + h + margin, img_h)
+    outer = image_bgr[oy1:oy2, ox1:ox2]
+
+    inner_mask = np.zeros(outer.shape[:2], dtype=bool)
+    r0 = max(y - oy1, 0)
+    r1 = min(y - oy1 + h, outer.shape[0])
+    c0 = max(x - ox1, 0)
+    c1 = min(x - ox1 + w, outer.shape[1])
+    inner_mask[r0:r1, c0:c1] = True
+
+    border_pixels = outer[~inner_mask].reshape(-1, 3)
+    if len(border_pixels) > 0:
+        brightness = np.mean(border_pixels, axis=1)
+        q1, q3 = np.percentile(brightness, 25), np.percentile(brightness, 75)
+        iqr = q3 - q1
+        valid = (brightness >= q1 - 1.5 * iqr) & (brightness <= q3 + 1.5 * iqr)
+        filtered = border_pixels[valid] if valid.any() else border_pixels
+        bg_bgr = _dominant_color(filtered)
+    else:
+        bg_bgr = (255, 255, 255)
+
+    # ── Foreground ────────────────────────────────────────────────────────────
+    ix1, iy1 = max(x, 0), max(y, 0)
+    ix2, iy2 = min(x + w, img_w), min(y + h, img_h)
+
+    if ix2 > ix1 and iy2 > iy1:
+        inner = image_bgr[iy1:iy2, ix1:ix2].reshape(-1, 3)
+        bg_arr = np.array(bg_bgr, dtype=np.float32)
+        dists = np.linalg.norm(inner.astype(np.float32) - bg_arr, axis=1)
+        fg_pixels = inner[dists > fg_threshold]
+        fg_bgr = _dominant_color(fg_pixels) if len(fg_pixels) > 0 else bg_bgr
+    else:
+        fg_bgr = (0, 0, 0)
+
+    return bgr_to_hex(fg_bgr), bgr_to_hex(bg_bgr)
 
 
 def update_csv_objects(

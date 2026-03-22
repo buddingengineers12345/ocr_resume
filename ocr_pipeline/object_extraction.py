@@ -27,6 +27,7 @@ from utils import (
     OUTPUT_CSV,
     OUTPUT_DIR,
     ensure_output_dir,
+    estimate_colors,
     find_image,
     overlaps_text,
     read_csv_objects,
@@ -34,7 +35,7 @@ from utils import (
 )
 
 
-def detect_structural(image_bgr, text_boxes: list) -> list:
+def detect_structural(image_bgr, text_boxes: list, image_original=None) -> list:
     """
     Detect structural elements via adaptive thresholding and edge detection.
 
@@ -46,7 +47,10 @@ def detect_structural(image_bgr, text_boxes: list) -> list:
       5. Combine region and edge info.
       6. Find contours; discard those dominated by text regions.
 
-    Returns a list of dicts: {object_type, text, x, y, w, h}.
+    *image_original* is used for colour estimation when provided (e.g. when
+    *image_bgr* is the text-cleaned variant).  Falls back to *image_bgr*.
+
+    Returns a list of dicts: {object_type, text, x, y, w, h, color, bg_color}.
     """
     import cv2
     import numpy as np
@@ -88,6 +92,9 @@ def detect_structural(image_bgr, text_boxes: list) -> list:
         if overlaps_text(x, y, w, h, text_boxes, threshold=0.5):
             continue
 
+        color_img = image_original if image_original is not None else image_bgr
+        color, bg_color = estimate_colors(color_img, x, y, w, h)
+
         objects.append(
             {
                 "object_type": "structural",
@@ -96,6 +103,8 @@ def detect_structural(image_bgr, text_boxes: list) -> list:
                 "y": y,
                 "w": w,
                 "h": h,
+                "color": color,
+                "bg_color": bg_color,
             }
         )
 
@@ -125,8 +134,14 @@ def run():
     if image_bgr is None:
         raise RuntimeError(f"OpenCV could not load '{image_path}'.")
 
+    # Load original image for colour sampling when using text_cleaned.png
+    image_original = None
+    if image_path != find_image():
+        orig_path = find_image()
+        image_original = cv2.imread(str(orig_path))
+
     print("[object_extraction] Detecting structural objects …")
-    structural_objects = detect_structural(image_bgr, text_boxes)
+    structural_objects = detect_structural(image_bgr, text_boxes, image_original)
     print(f"[object_extraction] {len(structural_objects)} structural objects detected.")
 
     update_csv_objects(structural_objects, "structural", csv_path)

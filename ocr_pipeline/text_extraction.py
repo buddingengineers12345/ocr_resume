@@ -27,6 +27,7 @@ from utils import (
     OUTPUT_CSV,
     OUTPUT_DIR,
     ensure_output_dir,
+    estimate_colors,
     find_image,
     update_csv_objects,
 )
@@ -81,10 +82,20 @@ def run() -> None:
     text_objects = detect_text(image_path)
     print(f"[text_extraction] {len(text_objects)} word objects detected.")
 
+    image_bgr = cv2.imread(str(image_path))
+    if image_bgr is not None:
+        for obj in text_objects:
+            color, bg_color = estimate_colors(image_bgr, obj["x"], obj["y"], obj["w"], obj["h"])
+            obj["color"] = color
+            obj["bg_color"] = bg_color
+    else:
+        for obj in text_objects:
+            obj["color"] = ""
+            obj["bg_color"] = ""
+
     update_csv_objects(text_objects, "text", OUTPUT_CSV)
     print(f"[text_extraction] CSV updated → {OUTPUT_CSV.name}")
 
-    image_bgr = cv2.imread(str(image_path))
     if image_bgr is not None:
         vis = image_bgr.copy()
         font = cv2.FONT_HERSHEY_SIMPLEX
