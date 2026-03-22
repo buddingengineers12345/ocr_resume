@@ -16,27 +16,30 @@ import csv
 import sys
 from pathlib import Path
 
-# Ensure sibling utils.py is importable regardless of cwd
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils import SCRIPT_DIR, TEMP_DIR, OUTPUT_CSV, CSV_FIELDNAMES, find_image, get_content_path, ensure_output_dir
+from utils import (
+    CSV_FIELDNAMES,
+    OUTPUT_CSV,
+    ensure_output_dir,
+    find_image,
+    get_content_path,
+)
 
 
-def prepare():
-    image_path   = find_image()
+def prepare() -> None:
+    image_path = find_image()
     content_path = get_content_path()
     ensure_output_dir()
-    csv_path     = OUTPUT_CSV
 
     print(f"[prepare] Image   : {image_path.name}")
     print(f"[prepare] Content : {content_path.name}")
 
-    # Create a fresh CSV with headers only
-    with open(csv_path, "w", newline="", encoding="utf-8") as fh:
+    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=CSV_FIELDNAMES)
         writer.writeheader()
 
-    print(f"[prepare] CSV initialised → {csv_path.name}")
+    print(f"[prepare] CSV initialised → {OUTPUT_CSV.name}")
 
 
 if __name__ == "__main__":

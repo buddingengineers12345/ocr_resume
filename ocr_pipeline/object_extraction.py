@@ -23,9 +23,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
-    OUTPUT_DIR, OUTPUT_CSV,
-    find_image, read_csv_objects, update_csv_objects, overlaps_text,
-    BLUE, ensure_output_dir,
+    BLUE,
+    OUTPUT_CSV,
+    OUTPUT_DIR,
+    ensure_output_dir,
+    find_image,
+    overlaps_text,
+    read_csv_objects,
+    update_csv_objects,
 )
 
 
@@ -50,10 +55,7 @@ def detect_structural(image_bgr, text_boxes: list) -> list:
 
     # Adaptive threshold (better separation than fixed Otsu)
     thresh = cv2.adaptiveThreshold(
-        gray, 255,
-        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv2.THRESH_BINARY_INV,
-        11, 2
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
     )
 
     # Light morphology (remove noise, don't merge objects)
@@ -67,11 +69,7 @@ def detect_structural(image_bgr, text_boxes: list) -> list:
     combined = cv2.bitwise_or(clean, edges)
 
     # Find contours
-    contours, _ = cv2.findContours(
-        combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-    )
-
-    MIN_SPAN = 20  # discard tiny noise contours
+    contours, _ = cv2.findContours(combined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     objects = []
     for cnt in contours:
@@ -90,11 +88,16 @@ def detect_structural(image_bgr, text_boxes: list) -> list:
         if overlaps_text(x, y, w, h, text_boxes, threshold=0.5):
             continue
 
-        objects.append({
-            "object_type": "structural",
-            "text": "",
-            "x": x, "y": y, "w": w, "h": h,
-        })
+        objects.append(
+            {
+                "object_type": "structural",
+                "text": "",
+                "x": x,
+                "y": y,
+                "w": w,
+                "h": h,
+            }
+        )
 
     return objects
 
@@ -112,10 +115,10 @@ def run():
         print("[object_extraction] Using original image (text_cleaned.png not found)")
 
     ensure_output_dir()
-    csv_path   = OUTPUT_CSV
+    csv_path = OUTPUT_CSV
 
     # Use existing text rows (if any) for overlap filtering
-    existing   = read_csv_objects(csv_path) if csv_path.exists() else []
+    existing = read_csv_objects(csv_path) if csv_path.exists() else []
     text_boxes = [o for o in existing if o["object_type"] in ("text", "char")]
 
     image_bgr = cv2.imread(str(image_path))
@@ -128,7 +131,7 @@ def run():
 
     update_csv_objects(structural_objects, "structural", csv_path)
     print(f"[object_extraction] CSV updated → {csv_path.name}")
-    
+
     # Visualize and save detected structural objects
     ensure_output_dir()
     vis = image_bgr.copy()
@@ -136,15 +139,21 @@ def run():
     FONT = cv2.FONT_HERSHEY_SIMPLEX
     FONT_SCALE = 0.35
     FONT_THICK = 1
-    
+
     for obj in structural_objects:
         x, y, w, h = obj["x"], obj["y"], obj["w"], obj["h"]
         cv2.rectangle(vis, (x, y), (x + w, y + h), BLUE, THICKNESS)
         cv2.putText(
-            vis, "structural", (x, max(y - 3, 10)),
-            FONT, FONT_SCALE, BLUE, FONT_THICK, cv2.LINE_AA,
+            vis,
+            "structural",
+            (x, max(y - 3, 10)),
+            FONT,
+            FONT_SCALE,
+            BLUE,
+            FONT_THICK,
+            cv2.LINE_AA,
         )
-    
+
     out_path = OUTPUT_DIR / "object_detected.png"
     cv2.imwrite(str(out_path), vis)
     print(f"[object_extraction] Saved visualization → {out_path.name}")
