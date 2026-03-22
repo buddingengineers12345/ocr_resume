@@ -31,8 +31,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from utils import (
     BLUE,
     GREEN,
-    OUTPUT_CSV,
-    OUTPUT_DIR,
+    get_output_csv,
+    get_image_output_dir,
     RED,
     ensure_output_dir,
     find_image,
@@ -84,15 +84,19 @@ def annotate_image(
 
 
 def run(output_name: str | None = None) -> None:
-    ensure_output_dir()
+    image_path = find_image()
+    output_csv = get_output_csv(image_path)
+    output_dir = get_image_output_dir(image_path)
 
-    if not OUTPUT_CSV.exists():
+    ensure_output_dir(image_path)
+
+    if not output_csv.exists():
         sys.exit(
-            f"ERROR: '{OUTPUT_CSV}' not found.\n"
+            f"ERROR: '{output_csv}' not found.\n"
             "Run prepare_pipeline.py (and at least one extraction script) first."
         )
 
-    all_objects = read_csv_objects(OUTPUT_CSV)
+    all_objects = read_csv_objects(output_csv)
     text_objects = [o for o in all_objects if o["object_type"] in ("text", "char")]
     structural_objects = [o for o in all_objects if o["object_type"] == "structural"]
 
@@ -113,7 +117,7 @@ def run(output_name: str | None = None) -> None:
     if output_name is None:
         output_name = _auto_output_name(text_objects, structural_objects)
 
-    out_path = OUTPUT_DIR / output_name
+    out_path = output_dir / output_name
     cv2.imwrite(str(out_path), annotated)
 
     matched = sum(

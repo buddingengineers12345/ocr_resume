@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
     CSV_FIELDNAMES,
-    OUTPUT_CSV,
+    get_output_csv,
     ensure_output_dir,
     find_image,
     get_content_path,
@@ -30,16 +30,17 @@ from utils import (
 def prepare() -> None:
     image_path = find_image()
     content_path = get_content_path()
-    ensure_output_dir()
+    ensure_output_dir(image_path)
 
     print(f"[prepare] Image   : {image_path.name}")
     print(f"[prepare] Content : {content_path.name}")
 
-    with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as fh:
+    output_csv = get_output_csv(image_path)
+    with open(output_csv, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=CSV_FIELDNAMES)
         writer.writeheader()
 
-    print(f"[prepare] CSV initialised → {OUTPUT_CSV.name}")
+    print(f"[prepare] CSV initialised → {output_csv.name}")
 
 
 if __name__ == "__main__":

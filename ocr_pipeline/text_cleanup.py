@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import cv2
 import numpy as np
-from utils import OUTPUT_CSV, OUTPUT_DIR, find_image, read_csv_objects
+from utils import get_output_csv, get_image_output_dir, find_image, read_csv_objects
 
 # ── Background colour estimation ──────────────────────────────────────────────
 
@@ -138,13 +138,15 @@ def estimate_background_color(
 
 def main() -> None:
     image_path = find_image()
+    output_csv = get_output_csv(image_path)
+    output_dir = get_image_output_dir(image_path)
 
-    if not OUTPUT_CSV.exists():
-        print(f"ERROR: objects.csv not found at {OUTPUT_CSV}")
+    if not output_csv.exists():
+        print(f"ERROR: objects.csv not found at {output_csv}")
         sys.exit(1)
 
     print(f"Image : {image_path}")
-    print(f"CSV   : {OUTPUT_CSV}")
+    print(f"CSV   : {output_csv}")
 
     image = cv2.imread(str(image_path))
     if image is None:
@@ -154,7 +156,7 @@ def main() -> None:
     img_h, img_w = image.shape[:2]
     cleaned = image.copy()
 
-    all_objects = read_csv_objects(OUTPUT_CSV)
+    all_objects = read_csv_objects(output_csv)
     text_boxes = [obj for obj in all_objects if obj["object_type"] in ("text", "char")]
 
     if not text_boxes:
@@ -178,8 +180,8 @@ def main() -> None:
     cleaned = cv2.morphologyEx(cleaned, cv2.MORPH_OPEN, kernel, iterations=1)
     cleaned = cv2.bilateralFilter(cleaned, 5, 50, 50)
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    cleaned_path = OUTPUT_DIR / "text_cleaned.png"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cleaned_path = output_dir / "text_cleaned.png"
     cv2.imwrite(str(cleaned_path), cleaned)
     print(f"Saved : {cleaned_path}")
 

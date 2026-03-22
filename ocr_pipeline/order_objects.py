@@ -19,26 +19,30 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
     CONTENT_FILE,
-    OUTPUT_CSV,
+    get_output_csv,
     TEMP_DIR,
     load_reference_order,
     read_csv_objects,
     write_csv_objects,
+    find_image,
 )
 
 
 def order_objects() -> None:
     """Reorder objects.csv: text (by content.txt), structural (y desc), then char."""
-    if not OUTPUT_CSV.exists():
-        print(f"[order_objects] CSV not found: {OUTPUT_CSV}")
+    image_path = find_image()
+    output_csv = get_output_csv(image_path)
+
+    if not output_csv.exists():
+        print(f"[order_objects] CSV not found: {output_csv}")
         return
 
     content_path = TEMP_DIR / CONTENT_FILE
     reference_order = load_reference_order(content_path)
     print(f"[order_objects] Loaded {len(reference_order)} entries from content.txt")
 
-    all_objects = read_csv_objects(OUTPUT_CSV)
-    print(f"[order_objects] Loaded {len(all_objects)} objects from {OUTPUT_CSV.name}")
+    all_objects = read_csv_objects(output_csv)
+    print(f"[order_objects] Loaded {len(all_objects)} objects from {output_csv.name}")
 
     text_objects = [o for o in all_objects if o["object_type"] == "text"]
     char_objects = [o for o in all_objects if o["object_type"] == "char"]
@@ -73,8 +77,8 @@ def order_objects() -> None:
     ordered_structural = sorted(structural_objects, key=lambda o: o["y"], reverse=True)
 
     reordered = ordered_text + ordered_structural + char_objects
-    write_csv_objects(reordered, OUTPUT_CSV)
-    print(f"[order_objects] {len(reordered)} objects written to {OUTPUT_CSV.name}")
+    write_csv_objects(reordered, output_csv)
+    print(f"[order_objects] {len(reordered)} objects written to {output_csv.name}")
     print(f"  - Text objects (in content.txt order): {len(ordered_text)}")
     print(f"  - Structural objects (y descending)  : {len(ordered_structural)}")
     print(f"  - Char objects                       : {len(char_objects)}")

@@ -24,8 +24,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
     GREEN,
-    OUTPUT_CSV,
-    OUTPUT_DIR,
+    get_output_csv,
+    get_image_output_dir,
     ensure_output_dir,
     estimate_colors,
     find_image,
@@ -74,9 +74,10 @@ def detect_text(image_path: Path) -> list[dict]:
 
 
 def run() -> None:
-    ensure_output_dir()
-
     image_path = find_image()
+    ensure_output_dir(image_path)
+    output_csv = get_output_csv(image_path)
+    output_dir = get_image_output_dir(image_path)
 
     print("[text_extraction] Running OCR (word-level) …")
     text_objects = detect_text(image_path)
@@ -93,8 +94,8 @@ def run() -> None:
             obj["color"] = ""
             obj["bg_color"] = ""
 
-    update_csv_objects(text_objects, "text", OUTPUT_CSV)
-    print(f"[text_extraction] CSV updated → {OUTPUT_CSV.name}")
+    update_csv_objects(text_objects, "text", output_csv)
+    print(f"[text_extraction] CSV updated → {output_csv.name}")
 
     if image_bgr is not None:
         vis = image_bgr.copy()
@@ -106,7 +107,7 @@ def run() -> None:
                 vis, obj["text"], (x, max(y - 3, 10)), font, 0.35, GREEN, 1, cv2.LINE_AA
             )
 
-        out_path = OUTPUT_DIR / "text_detected.png"
+        out_path = output_dir / "text_detected.png"
         cv2.imwrite(str(out_path), vis)
         print(f"[text_extraction] Saved visualization → {out_path.name}")
 

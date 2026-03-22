@@ -19,10 +19,8 @@ import numpy as np
 SCRIPT_DIR = Path(__file__).parent.parent.resolve()
 IMAGE_DIR = SCRIPT_DIR / "image_reference"
 TEMP_DIR = SCRIPT_DIR / "temp"
-OUTPUT_DIR = SCRIPT_DIR / "output"
 IMAGE_FILE = "Page_1.png"
 CONTENT_FILE = "content.txt"
-OUTPUT_CSV = OUTPUT_DIR / "objects.csv"
 
 # OpenCV BGR colours
 GREEN = (0, 255, 0)  # matched text
@@ -35,9 +33,28 @@ CSV_FIELDNAMES = ["object_type", "text", "x", "y", "width", "height", "color", "
 # ── Output directory ──────────────────────────────────────────────────────────
 
 
-def ensure_output_dir() -> None:
-    """Create the output directory if it does not exist."""
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+def get_image_output_dir(image_path: Path | None = None) -> Path:
+    """Get the output directory for a given image.
+    
+    If image_path is None, uses find_image() to locate it.
+    Returns: output/{image_stem}/ where image_stem is filename without extension.
+    """
+    if image_path is None:
+        image_path = find_image()
+    image_stem = image_path.stem  # filename without extension
+    return SCRIPT_DIR / "output" / image_stem
+
+
+def get_output_csv(image_path: Path | None = None) -> Path:
+    """Get the objects.csv path for a given image."""
+    output_dir = get_image_output_dir(image_path)
+    return output_dir / "objects.csv"
+
+
+def ensure_output_dir(image_path: Path | None = None) -> None:
+    """Create the output directory for a given image if it does not exist."""
+    output_dir = get_image_output_dir(image_path)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
 
 # ── Image discovery ────────────────────────────────────────────────────────────

@@ -24,8 +24,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (
     BLUE,
-    OUTPUT_CSV,
-    OUTPUT_DIR,
+    get_output_csv,
+    get_image_output_dir,
     ensure_output_dir,
     estimate_colors,
     find_image,
@@ -114,20 +114,23 @@ def detect_structural(image_bgr, text_boxes: list, image_original=None) -> list:
 def run():
     import cv2
 
+    image_source = find_image()
+    output_dir = get_image_output_dir(image_source)
+    output_csv = get_output_csv(image_source)
+
     # Check if cleaned text image exists; otherwise use the original image
-    cleaned_image_path = OUTPUT_DIR / "text_cleaned.png"
+    cleaned_image_path = output_dir / "text_cleaned.png"
     if cleaned_image_path.exists():
         image_path = cleaned_image_path
         print("[object_extraction] Using text_cleaned.png (text regions removed)")
     else:
-        image_path = find_image()
+        image_path = image_source
         print("[object_extraction] Using original image (text_cleaned.png not found)")
 
-    ensure_output_dir()
-    csv_path = OUTPUT_CSV
+    ensure_output_dir(image_source)
 
     # Use existing text rows (if any) for overlap filtering
-    existing = read_csv_objects(csv_path) if csv_path.exists() else []
+    existing = read_csv_objects(output_csv) if output_csv.exists() else []
     text_boxes = [o for o in existing if o["object_type"] in ("text", "char")]
 
     image_bgr = cv2.imread(str(image_path))
@@ -136,19 +139,17 @@ def run():
 
     # Load original image for colour sampling when using text_cleaned.png
     image_original = None
-    if image_path != find_image():
-        orig_path = find_image()
-        image_original = cv2.imread(str(orig_path))
+    if image_path != image_source:
+        image_original = cv2.imread(str(image_source))
 
     print("[object_extraction] Detecting structural objects …")
     structural_objects = detect_structural(image_bgr, text_boxes, image_original)
     print(f"[object_extraction] {len(structural_objects)} structural objects detected.")
 
-    update_csv_objects(structural_objects, "structural", csv_path)
-    print(f"[object_extraction] CSV updated → {csv_path.name}")
+    update_csv_objects(structural_objects, "structural", output_csv)
+    print(f"[object_extraction] CSV updated → {output_csv.name}")
 
     # Visualize and save detected structural objects
-    ensure_output_dir()
     vis = image_bgr.copy()
     THICKNESS = 2
     FONT = cv2.FONT_HERSHEY_SIMPLEX
@@ -169,7 +170,7 @@ def run():
             cv2.LINE_AA,
         )
 
-    out_path = OUTPUT_DIR / "object_detected.png"
+    out_path = output_dir / "object_detected.png"
     cv2.imwrite(str(out_path), vis)
     print(f"[object_extraction] Saved visualization → {out_path.name}")
 
