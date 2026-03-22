@@ -110,7 +110,7 @@ def run():
 
     # Use existing text rows (if any) for overlap filtering
     existing   = read_csv_objects(csv_path) if csv_path.exists() else []
-    text_boxes = [o for o in existing if o["object_type"] == "text"]
+    text_boxes = [o for o in existing if o["object_type"] in ("text", "char")]
 
     image_bgr = cv2.imread(str(image_path))
     if image_bgr is None:

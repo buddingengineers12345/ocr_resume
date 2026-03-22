@@ -33,64 +33,125 @@ from utils import SCRIPT_DIR, OUTPUT_CSV, OUTPUT_DIR, find_image, read_csv_objec
 # ── Background colour estimation ──────────────────────────────────────────────
 
 def estimate_background_color(image_bgr: np.ndarray, x: int, y: int,
-                               w: int, h: int, margin: int = 8,
-                               sample_size: int = 50) -> tuple:
+                               w: int, h: int, margin: int = 8) -> tuple:
     """
-    Estimate the background colour of a bounding-box region using an improved algorithm.
+    Estimate the background colour of a bounding-box region using an advanced algorithm.
 
     Strategy:
-    1. Sample a larger border ring (expanded by `margin` pixels)
-    2. Apply bilateral filtering to smooth and denoise the sample
-    3. Find the most frequent colour in the filtered border
-    4. Falls back to white if the border is insufficient
+    1. Sample from INNER margin first (closest to text, most likely background)
+    2. If insufficient, expand to outer margin
+    3. Filter outliers using IQR (Interquartile Range) method
+    4. Use mode (most common color) for robustness
 
-    This handles varying backgrounds and noise better than the original approach.
+    This handles text on light backgrounds surrounded by dark areas.
 
     Returns a BGR tuple of ints.
     """
     img_h, img_w = image_bgr.shape[:2]
 
-    # Outer rectangle (expanded by margin)
+    # Priority 1: Sample from INNER margin (2-4px from edge)
+    inner_margin_min = 1
+    inner_margin_max = 3
+    
+    inner_x1 = max(x + inner_margin_min, 0)
+    inner_y1 = max(y + inner_margin_min, 0)
+    inner_x2 = min(x + w - inner_margin_min, img_w)
+    inner_y2 = min(y + h - inner_margin_min, img_h)
+
+    inner_border_pixels = None
+    if inner_x2 > inner_x1 and inner_y2 > inner_y1:
+        inner_region = image_bgr[inner_y1:inner_y2, inner_x1:inner_x2]
+        
+        # Create border mask (pixels at edges of inner region)
+        border_mask = np.zeros(inner_region.shape[:2], dtype=bool)
+        border_mask[0, :] = True  # Top
+        border_mask[-1, :] = True  # Bottom
+        border_mask[:, 0] = True  # Left
+        border_mask[:, -1] = True  # Right
+        
+        inner_border = inner_region[border_mask]
+        if len(inner_border) > 5:
+            inner_border_pixels = inner_border
+
+    # If inner margin sufficient, use it
+    if inner_border_pixels is not None and len(inner_border_pixels) > 10:
+        # Get the most common color in inner border
+        inner_encoded = (
+            inner_border_pixels[:, 0].astype(np.uint32)
+            | (inner_border_pixels[:, 1].astype(np.uint32) << 8)
+            | (inner_border_pixels[:, 2].astype(np.uint32) << 16)
+        )
+        unique, counts = np.unique(inner_encoded, return_counts=True)
+        dominant_idx = np.argmax(counts)
+        dominant = unique[dominant_idx]
+        
+        b = int(dominant & 0xFF)
+        g = int((dominant >> 8) & 0xFF)
+        r = int((dominant >> 16) & 0xFF)
+        return (b, g, r)
+
+    # Priority 2: Fall back to outer margin with outlier filtering
     ox1 = max(x - margin, 0)
     oy1 = max(y - margin, 0)
     ox2 = min(x + w + margin, img_w)
     oy2 = min(y + h + margin, img_h)
 
     outer = image_bgr[oy1:oy2, ox1:ox2].copy()
-
     if outer.size == 0:
         return (255, 255, 255)
 
-    # Apply bilateral filtering to denoise and smooth the border region
-    # This helps with inconsistent backgrounds
+    # Apply bilateral filtering to denoise
     if outer.shape[0] > 2 and outer.shape[1] > 2:
         outer = cv2.bilateralFilter(outer, 9, 75, 75)
 
-    # Inner rectangle mask – True for pixels that belong to the box itself
-    inner_x1 = max(x - ox1, 0)
-    inner_y1 = max(y - oy1, 0)
-    inner_x2 = min(inner_x1 + w, outer.shape[1])
-    inner_y2 = min(inner_y1 + h, outer.shape[0])
+    # Create mask for border pixels (outside the text box)
+    inner_x1_rel = max(x - ox1, 0)
+    inner_y1_rel = max(y - oy1, 0)
+    inner_x2_rel = min(inner_x1_rel + w, outer.shape[1])
+    inner_y2_rel = min(inner_y1_rel + h, outer.shape[0])
 
     mask = np.zeros(outer.shape[:2], dtype=bool)
-    if inner_x2 > inner_x1 and inner_y2 > inner_y1:
-        mask[inner_y1:inner_y2, inner_x1:inner_x2] = True
+    if inner_x2_rel > inner_x1_rel and inner_y2_rel > inner_y1_rel:
+        mask[inner_y1_rel:inner_y2_rel, inner_x1_rel:inner_x2_rel] = True
 
-    border_pixels = outer[~mask]  # pixels in the outer ring only
+    border_pixels = outer[~mask].reshape(-1, 3)
 
     if border_pixels.size == 0:
         return (255, 255, 255)
 
-    # Reshape and find the most common BGR colour
-    border_pixels = border_pixels.reshape(-1, 3)
+    # Calculate brightness for each pixel and filter outliers using IQR
+    brightness = np.mean(border_pixels, axis=1)
+    
+    q1 = np.percentile(brightness, 25)
+    q3 = np.percentile(brightness, 75)
+    iqr = q3 - q1
+    
+    # Keep pixels within 1.5*IQR of the quartiles (standard outlier detection)
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+    
+    valid_mask = (brightness >= lower_bound) & (brightness <= upper_bound)
+    filtered_pixels = border_pixels[valid_mask]
 
-    # Use k-means to find the dominant color cluster (more robust than mode)
-    if len(border_pixels) > 0:
-        # Simple approach: find the median color in the border
-        median_color = np.median(border_pixels, axis=0).astype(int)
-        return tuple(median_color.tolist())
+    if len(filtered_pixels) == 0:
+        # If all filtered out, use median
+        return tuple(np.median(border_pixels, axis=0).astype(int).tolist())
 
-    return (255, 255, 255)
+    # Find most common color among filtered pixels
+    filtered_encoded = (
+        filtered_pixels[:, 0].astype(np.uint32)
+        | (filtered_pixels[:, 1].astype(np.uint32) << 8)
+        | (filtered_pixels[:, 2].astype(np.uint32) << 16)
+    )
+    
+    unique, counts = np.unique(filtered_encoded, return_counts=True)
+    dominant_idx = np.argmax(counts)
+    dominant = unique[dominant_idx]
+    
+    b = int(dominant & 0xFF)
+    g = int((dominant >> 8) & 0xFF)
+    r = int((dominant >> 16) & 0xFF)
+    return (b, g, r)
 
 
 # ── Overlay generation ────────────────────────────────────────────────────────
@@ -126,6 +187,98 @@ def create_overlay(original_path: Path, cleaned_path: Path,
     
     return overlay
 
+
+def create_diff_image(original_path: Path, cleaned_path: Path) -> np.ndarray:
+    """
+    Create a difference/comparison image highlighting changes between original and cleaned.
+    
+    Color coding:
+    - RED areas: Text that was removed (original content)
+    - CYAN areas: Background that was filled/added
+    - WHITE areas: No significant changes
+    
+    Returns the diff image as a numpy array
+    """
+    original = cv2.imread(str(original_path))
+    cleaned = cv2.imread(str(cleaned_path))
+    
+    if original is None or cleaned is None:
+        print("ERROR: Could not read one or both images for diff.")
+        return None
+    
+    # Ensure both images have the same dimensions
+    if original.shape != cleaned.shape:
+        cleaned = cv2.resize(cleaned, (original.shape[1], original.shape[0]))
+    
+    # Convert to float for precise calculations
+    original_f = original.astype(np.float32)
+    cleaned_f = cleaned.astype(np.float32)
+    
+    # Calculate the absolute difference
+    diff = np.abs(original_f - cleaned_f)
+    
+    # Create a color-coded diff visualization
+    diff_image = np.zeros_like(original)
+    
+    # Threshold to identify significant changes (avoid noise)
+    threshold = 15
+    diff_mask = np.any(diff > threshold, axis=2)
+    
+    # Where original is darker than cleaned (text was removed) - show in RED
+    removed = np.all(original_f < (cleaned_f - threshold), axis=2)
+    diff_image[removed] = [0, 0, 255]  # Red in BGR
+    
+    # Where original is lighter than cleaned (background was filled) - show in CYAN  
+    added = np.all(original_f > (cleaned_f + threshold), axis=2)
+    diff_image[added] = [255, 255, 0]  # Cyan in BGR
+    
+    # Areas with changes but not clearly removed/added - show in MAGENTA
+    mixed = diff_mask & ~removed & ~added
+    diff_image[mixed] = [255, 0, 255]  # Magenta in BGR
+    
+    # Blend the diff visualization with the original for better visibility
+    diff_viz = cv2.addWeighted(original, 0.6, diff_image, 0.4, 0)
+    
+    return diff_viz
+
+
+def create_side_by_side(original_path: Path, cleaned_path: Path) -> np.ndarray:
+    """
+    Create a side-by-side comparison image with labels.
+    
+    Returns the side-by-side comparison as a numpy array
+    """
+    original = cv2.imread(str(original_path))
+    cleaned = cv2.imread(str(cleaned_path))
+    
+    if original is None or cleaned is None:
+        print("ERROR: Could not read one or both images for side-by-side.")
+        return None
+    
+    # Ensure both images have the same dimensions
+    if original.shape != cleaned.shape:
+        cleaned = cv2.resize(cleaned, (original.shape[1], original.shape[0]))
+    
+    # Create side-by-side image
+    h, w = original.shape[:2]
+    side_by_side = np.hstack([original, cleaned])
+    
+    # Add labels on a background stripe
+    label_height = 50
+    side_by_side_labeled = np.ones((h + label_height, w * 2, 3), dtype=np.uint8) * 255
+    side_by_side_labeled[label_height:, :] = side_by_side
+    
+    # Add labels with background
+    cv2.rectangle(side_by_side_labeled, (0, 0), (w, label_height), (200, 200, 200), -1)
+    cv2.rectangle(side_by_side_labeled, (w, 0), (w * 2, label_height), (200, 200, 200), -1)
+    
+    cv2.putText(side_by_side_labeled, "ORIGINAL", (20, 35), 
+                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
+    cv2.putText(side_by_side_labeled, "CLEANED", (w + 20, 35), 
+                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+    
+    return side_by_side_labeled
+
 def main():
     # ── Locate inputs ──────────────────────────────────────────────────────────
     image_path = find_image()
@@ -149,7 +302,7 @@ def main():
 
     # ── Load bounding boxes ────────────────────────────────────────────────────
     all_objects = read_csv_objects(csv_path)
-    text_boxes  = [obj for obj in all_objects if obj["object_type"] == "text"]
+    text_boxes  = [obj for obj in all_objects if obj["object_type"] in ("text", "char")]
 
     if not text_boxes:
         print("No text rows found in objects.csv – nothing to clean.")
@@ -200,6 +353,28 @@ def main():
         print(f"Saved : {overlay_path}")
     else:
         print("WARNING: Failed to create overlay image.")
+
+    # ── Create and save diff image ────────────────────────────────────────────
+    print("Creating diff comparison image...")
+    diff_image = create_diff_image(image_path, cleaned_path)
+    
+    if diff_image is not None:
+        diff_path = OUTPUT_DIR / "text_cleanup_diff.png"
+        cv2.imwrite(str(diff_path), diff_image)
+        print(f"Saved : {diff_path}")
+    else:
+        print("WARNING: Failed to create diff image.")
+
+    # ── Create and save side-by-side comparison ───────────────────────────────
+    print("Creating side-by-side comparison...")
+    side_by_side = create_side_by_side(image_path, cleaned_path)
+    
+    if side_by_side is not None:
+        side_by_side_path = OUTPUT_DIR / "text_cleanup_comparison.png"
+        cv2.imwrite(str(side_by_side_path), side_by_side)
+        print(f"Saved : {side_by_side_path}")
+    else:
+        print("WARNING: Failed to create side-by-side comparison.")
 
 
 if __name__ == "__main__":

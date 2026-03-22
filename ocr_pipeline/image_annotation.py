@@ -96,7 +96,7 @@ def run(output_name: str = None):
         )
 
     all_objects        = read_csv_objects(csv_path)
-    text_objects       = [o for o in all_objects if o["object_type"] == "text"]
+    text_objects       = [o for o in all_objects if o["object_type"] in ("text", "char")]
     structural_objects = [o for o in all_objects if o["object_type"] == "structural"]
 
     if not all_objects:

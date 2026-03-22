@@ -53,8 +53,10 @@ def detect_text(image_path: Path) -> list:
         conf = int(data["conf"][i])
         if conf < 0 or not word:
             continue
+        # Classify single characters as "char", multi-character words as "text"
+        object_type = "char" if len(word) == 1 else "text"
         objects.append({
-            "object_type": "text",
+            "object_type": object_type,
             "text": word,
             "x":    data["left"][i],
             "y":    data["top"][i],
