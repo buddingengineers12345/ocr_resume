@@ -18,7 +18,7 @@ from pathlib import Path
 def extract_values_from_md() -> None:
     """Read content.md, extract colon-separated values, write to temp/content.txt."""
     workspace_root = Path(__file__).parent.resolve()
-    content_md_path = workspace_root / "content.md"
+    content_md_path = workspace_root / "html_info"/ "content.md"
     temp_dir = workspace_root / "temp"
     content_txt_path = temp_dir / "content.txt"
 

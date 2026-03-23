@@ -10,6 +10,7 @@ how or where they are invoked.
 """
 
 import csv
+import os
 from pathlib import Path
 
 import numpy as np
@@ -61,7 +62,21 @@ def ensure_output_dir(image_path: Path | None = None) -> None:
 
 
 def find_image() -> Path:
-    """Locate the input PNG in image_reference/; falls back to any page*.png."""
+    """Locate the input PNG in image_reference/.
+
+    Resolution order:
+      1. IMAGE_PATH environment variable (set by pipeline.sh for multi-image runs)
+      2. image_reference/Page_1.png  (default single-image name)
+      3. First image_reference/*.png whose name starts with 'page' (legacy fallback)
+    """
+    env_path = os.environ.get("IMAGE_PATH")
+    if env_path:
+        p = Path(env_path)
+        if p.exists():
+            return p
+        raise FileNotFoundError(
+            f"IMAGE_PATH env var points to non-existent file: '{env_path}'"
+        )
     direct = IMAGE_DIR / IMAGE_FILE
     if direct.exists():
         return direct

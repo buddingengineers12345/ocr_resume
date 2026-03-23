@@ -155,5 +155,5 @@ temp/
 
 # Project Temp folders
 image_reference/*.png
-output/*.png
+output/
 temp/
