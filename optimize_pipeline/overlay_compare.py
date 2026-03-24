@@ -1,31 +1,33 @@
 """
 overlay_compare.py
 ------------------
-Overlays the rendered resume screenshot on top of the original image
-to visually compare alignment, spacing, and layout accuracy.
+Overlays the rendered resume (Output_1.png) on top of the reference
+image (Page_1.png) to visually compare alignment, spacing, and layout.
 
-Usage:
-    python overlay_compare.py
+Usage (from workspace root):
+    python optimize_pipeline/overlay_compare.py
 
-Outputs:
-    overlay_50.png        — 50% blend (default comparison view)
-    overlay_side_by_side.png — original | rendered side by side
-    overlay_diff.png      — pixel-level difference heatmap
+Outputs (written to optimize_pipeline/):
+    overlay_50.png            — 50% alpha blend
+    overlay_side_by_side.png  — original | rendered side by side
+    overlay_diff.png          — pixel-level difference heatmap
 """
 
-from PIL import Image, ImageChops, ImageFilter, ImageDraw, ImageFont
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-import os
 
 # ── Paths ─────────────────────────────────────────────────────────────
-ORIGINAL_PATH   = "Page_1.png"           # original reference image
-RENDERED_PATH   = "resume_screenshot.png" # your rendered webpage PNG
-OUTPUT_DIR      = "."                     # where to save outputs
+_HERE = Path(__file__).parent
+_ROOT = _HERE.parent
+
+ORIGINAL_PATH = str(_ROOT / "image_reference" / "Page_1.png")
+RENDERED_PATH = str(_ROOT / "image_reference" / "Output_1.png")
+OUTPUT_DIR    = str(_HERE)
 
 # ── Parameters ────────────────────────────────────────────────────────
-BLEND_ALPHA     = 0.5   # 0.0 = only original, 1.0 = only rendered
-RESIZE_TO_ORIG  = True  # if True, scale rendered to match original size
-LABEL_IMAGES    = True  # draw labels on side-by-side output
+BLEND_ALPHA  = 0.5   # 0.0 = only original, 1.0 = only rendered
+LABEL_IMAGES = True  # draw labels on side-by-side output
 
 
 def load_as_rgb(path):
@@ -117,10 +119,10 @@ def diff_heatmap(original, rendered):
 
 
 def save(img, filename):
-    path = os.path.join(OUTPUT_DIR, filename)
-    img.save(path)
+    path = Path(OUTPUT_DIR) / filename
+    img.save(str(path))
     print(f"  Saved → {path}")
-    return path
+    return str(path)
 
 
 # ── Main ──────────────────────────────────────────────────────────────

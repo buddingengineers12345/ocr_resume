@@ -17,7 +17,7 @@
 #   which is read by ocr_pipeline/utils.py:find_image().
 #
 # Pipeline sequence (per image):
-#   1. extract_values.py (generates temp/content.txt – runs once, not per image)
+#   1. html_pipeline/extract_values.py (generates temp/content.txt – runs once, not per image)
 #   2. prepare_pipeline.py (initialises objects.csv for the image)
 #   3. text_extraction.py (OCR text detection)
 #   4. text_cleanup.py (removes text regions when used in objects/full modes)
@@ -64,8 +64,8 @@ run_step() {
 }
 
 run_extract() {
-    log "  -> extract_values.py"
-    "$PYTHON" "$SCRIPT_DIR/extract_values.py" 2>&1 | tee -a "$LOG_FILE"
+    log "  -> html_pipeline/extract_values.py"
+    "$PYTHON" "$SCRIPT_DIR/html_pipeline/extract_values.py" 2>&1 | tee -a "$LOG_FILE"
 }
 
 run_annotate() {

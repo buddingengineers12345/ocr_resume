@@ -24,7 +24,8 @@ Usage:
         --md       html_info/content.md    \\
         --html     html_pipeline/resume.html \\
         --out      image_reference/Output_1.png \\
-        --width    980
+        --width    1414 \\
+        --height   2000
 """
 
 import re
@@ -40,10 +41,12 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 SCRIPT_DIR = Path(__file__).parent.resolve()
 WORKSPACE  = SCRIPT_DIR.parent
 
-DEFAULT_TEMPLATE = WORKSPACE / "html_info"      / "template.html"
-DEFAULT_MD_FILE  = WORKSPACE / "html_info"      / "content.md"
-DEFAULT_RESUME   = SCRIPT_DIR                   / "resume.html"
-DEFAULT_OUT      = WORKSPACE / "image_reference" / "Output_1.png"
+DEFAULT_TEMPLATE     = WORKSPACE / "html_info"      / "template.html"
+DEFAULT_CSS_TEMPLATE = WORKSPACE / "html_info"      / "template.css"
+DEFAULT_MD_FILE      = WORKSPACE / "html_info"      / "content.md"
+DEFAULT_RESUME       = SCRIPT_DIR                   / "resume.html"
+DEFAULT_RESUME_CSS   = SCRIPT_DIR                   / "resume.css"
+DEFAULT_OUT          = WORKSPACE / "image_reference" / "Output_1.png"
 LOG_FILE         = WORKSPACE / "temp"            / "render_html.log"
 
 # ── Logging ────────────────────────────────────────────────────────────────────
@@ -59,18 +62,37 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-# ── Task 1: build resume.html from template + content.md ──────────────────────
+# ── Task 1: build resume.html + resume.css from template + content.md ───────────
 def build_resume_html(
     template_path: Path,
     md_path: Path,
     out_path: Path,
+    css_template_path: Path = DEFAULT_CSS_TEMPLATE,
+    css_out_path: Path = DEFAULT_RESUME_CSS,
 ) -> Path:
     """
     Inject content.md into template.html's JS DEFAULT_MD variable, add an
     auto-render call on DOMContentLoaded, and save the result as resume.html.
+    Also copies template.css → resume.css, adjusting font paths to be relative
+    to html_pipeline/ instead of html_info/.
     """
     log.info("[build] Reading template : %s", template_path)
     template_html = template_path.read_text(encoding="utf-8")
+
+    # ── CSS: copy template.css → resume.css with corrected font paths ─────────
+    # Fonts live at html_info/fonts/; resume.css lives in html_pipeline/,
+    # so relative paths need to go up one level into html_info/.
+    log.info("[build] Reading CSS      : %s", css_template_path)
+    css_content = css_template_path.read_text(encoding="utf-8")
+    css_out = css_content.replace("./fonts/", "../html_info/fonts/")
+    css_out_path.parent.mkdir(parents=True, exist_ok=True)
+    css_out_path.write_text(css_out, encoding="utf-8")
+    log.info("[build] resume.css written → %s", css_out_path)
+
+    # Point the HTML's stylesheet link at resume.css instead of template.css
+    template_html = template_html.replace(
+        'href="./template.css"', 'href="./resume.css"', 1
+    )
 
     log.info("[build] Reading markdown : %s", md_path)
     md_content = md_path.read_text(encoding="utf-8")
@@ -132,7 +154,8 @@ def build_resume_html(
 def render_html_to_png(
     html_path: Path,
     out_path: Path,
-    width: int = 980,
+    width: int = 1414,
+    height: int = 2000,
     crop_toolbar: bool = True,
 ) -> Path:
     """
@@ -149,14 +172,14 @@ def render_html_to_png(
 
     log.info("[render] Starting Playwright Chromium (headless)")
     log.info("[render] Input HTML : %s", html_path)
-    log.info("[render] Viewport   : %d px wide", width)
+    log.info("[render] Viewport   : %d × %d px", width, height)
 
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             log.info("[render] Browser launched")
             try:
-                page = browser.new_page(viewport={"width": width, "height": 1400})
+                page = browser.new_page(viewport={"width": width, "height": height})
                 file_url = html_path.as_uri()
                 log.info("[render] Navigating to: %s", file_url)
                 page.goto(file_url, wait_until="domcontentloaded", timeout=30_000)
@@ -186,6 +209,10 @@ def render_html_to_png(
         img = img.crop((0, toolbar_px, w, h - toolbar_px))
         log.info("[render] After toolbar crop   : %d × %d px", img.size[0], img.size[1])
 
+    # Resize to target dimensions
+    img = img.resize((width, height), Image.Resampling.LANCZOS)
+    log.info("[render] After resize         : %d × %d px", img.size[0], img.size[1])
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(str(out_path), "PNG", optimize=True)
     tmp_path.unlink(missing_ok=True)
@@ -211,12 +238,24 @@ def main() -> None:
         help="Generated resume HTML  (default: html_pipeline/resume.html)",
     )
     parser.add_argument(
+        "--css", default=str(DEFAULT_CSS_TEMPLATE),
+        help="Source template CSS  (default: html_info/template.css)",
+    )
+    parser.add_argument(
+        "--css-out", default=str(DEFAULT_RESUME_CSS),
+        help="Generated resume CSS  (default: html_pipeline/resume.css)",
+    )
+    parser.add_argument(
         "--out", default=str(DEFAULT_OUT),
         help="Output PNG path  (default: image_reference/Output_1.png)",
     )
     parser.add_argument(
-        "--width", default=980, type=int,
-        help="Viewport width in px  (default: 980)",
+        "--width", default=1414, type=int,
+        help="Viewport width in px  (default: 1414)",
+    )
+    parser.add_argument(
+        "--height", default=2000, type=int,
+        help="Viewport height in px  (default: 2000)",
     )
     parser.add_argument(
         "--no-crop", action="store_true",
@@ -227,17 +266,22 @@ def main() -> None:
     log.info("=" * 60)
     log.info("render_html.py  START")
     log.info("  template : %s", args.template)
+    log.info("  css      : %s", args.css)
     log.info("  markdown : %s", args.md)
     log.info("  html out : %s", args.html)
+    log.info("  css out  : %s", args.css_out)
     log.info("  png out  : %s", args.out)
     log.info("  width    : %d px", args.width)
+    log.info("  height   : %d px", args.height)
     log.info("=" * 60)
 
-    # Task 1 – inject content.md → resume.html
+    # Task 1 – inject content.md → resume.html + build resume.css
     resume_path = build_resume_html(
         Path(args.template),
         Path(args.md),
         Path(args.html),
+        css_template_path=Path(args.css),
+        css_out_path=Path(args.css_out),
     )
 
     # Tasks 2 & 3 – render resume.html → Output_1.png
@@ -245,6 +289,7 @@ def main() -> None:
         resume_path,
         Path(args.out),
         width=args.width,
+        height=args.height,
         crop_toolbar=not args.no_crop,
     )
 

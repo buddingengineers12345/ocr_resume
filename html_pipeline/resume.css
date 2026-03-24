@@ -1,0 +1,332 @@
+@font-face {
+  font-family: 'TGBonum';
+  src: url('../html_info/fonts/TGBonum-400.otf') format('opentype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'TGBonum';
+  src: url('../html_info/fonts/TGBonum-400.otf') format('opentype');
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'TGHeros';
+  src: url('../html_info/fonts/TGHeros-700.otf') format('opentype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'TGHeros';
+  src: url('../html_info/fonts/TGHeros-400.otf') format('opentype');
+  font-weight: 700;
+}
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Variables ── */
+:root {
+  --sidebar-bg:   #333132;
+  --sidebar-text: #e2e1e2;
+  --main-bg:      #f6f6f6;
+  --main-text:    #373536;
+  --sidebar-w:    540px;
+}
+
+body {
+  font-family: 'TGHeros', 'Source Sans 3', Arial, sans-serif;
+  background: #aaaaaa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ══════════════════════════════════════
+   TOOLBAR
+══════════════════════════════════════ */
+#toolbar {
+  width: 100%;
+  background: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+#toolbar-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #555;
+}
+.tbtn {
+  background: #2a2a2a;
+  color: #ddd;
+  border: 1px solid #444;
+  border-radius: 5px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.tbtn:hover { background: #444; }
+.tbtn.primary { background: #e0e0e0; color: #111; border-color: #ccc; }
+.tbtn.primary:hover { background: #fff; }
+
+/* ══════════════════════════════════════
+   MD EDITOR OVERLAY
+══════════════════════════════════════ */
+#ed-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+#ed-overlay.open { display: flex; }
+#ed-box {
+  background: #1a1a1a;
+  border-radius: 10px;
+  width: 92%; max-width: 800px;
+  max-height: 88vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+#ed-head {
+  padding: 13px 20px;
+  background: #242424;
+  color: #999;
+  font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  display: flex; justify-content: space-between; align-items: center;
+}
+#ed-hint { font-size: 10px; color: #444; font-weight: 400; letter-spacing: 0; text-transform: none; }
+#md-ta {
+  flex: 1;
+  background: #1a1a1a; color: #c0c0c0;
+  border: none; outline: none;
+  padding: 18px 22px;
+  font-family: 'Courier New', monospace;
+  font-size: 12.5px; line-height: 1.8;
+  resize: none; overflow-y: auto;
+  min-height: 200px;
+}
+#ed-foot {
+  padding: 11px 20px;
+  background: #242424;
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+
+/* ══════════════════════════════════════
+   PAGE WRAPPER
+══════════════════════════════════════ */
+#pw { padding: 28px 0 60px; width: 100%; display: flex; justify-content: center; }
+
+/* ══════════════════════════════════════
+   RESUME SHELL
+══════════════════════════════════════ */
+#resume {
+  width: 1414px;
+  background: var(--main-bg);
+  display: flex;
+  min-height: 2000px;
+  box-shadow: 0 6px 50px rgba(0,0,0,0.35);
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════ */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 50px;
+}
+
+/* — Photo — */
+.photo-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center; padding: 44px 0px 90px 0px;
+}
+.photo-circle {
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #d8d8d8, #a0a0a0);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.photo-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* — Pill headers — */
+.pill {
+  background: #3a3a3a;
+  border: 2px solid #555;
+  border-radius: 40px;
+  padding: 10px 0;
+  width: 303px;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #fff;
+  margin-bottom: 32px;
+}
+
+/* — Contact rows — */
+#sb-contact {
+  width: 100%; padding: 0px 30px 0px 126px;
+  margin-bottom: 55px;
+}
+.crow {
+  display: flex;
+  align-items: flex-start; margin-bottom: 21px;
+  color: var(--sidebar-text);
+  font-size: 19px;
+  line-height: 1.5;
+}
+.cicon {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  margin-right: 14px;
+}
+.cicon svg { width: 23px; height: 23px; fill: #e2e1e2; }
+.ctext { flex: 1; word-break: break-word; }
+
+/* — Awards — */
+#sb-awards { width: 100%; padding: 0px 30px 0px 111px; }
+.arow {
+  display: flex;
+  align-items: flex-start; margin-bottom: 19px;
+  color: var(--sidebar-text);
+  font-size: 19px;
+  line-height: 1.5;
+}
+.adot {
+  width: 11px;
+  min-width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #e2e1e2;
+  margin-top: 7px;
+  margin-right: 20px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════
+   MAIN CONTENT
+══════════════════════════════════════ */
+#main {
+  flex: 1; padding: 40px 131px 72px 66px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Name */
+#r-name {
+  font-family: 'TGBonum', 'EB Garamond', Georgia, serif;
+  font-size: 92px;
+  font-weight: 400;
+  color: #111;
+  line-height: 1;
+  margin-bottom: 23px;
+  letter-spacing: -0.5px;
+}
+
+/* Profile */
+#profile { margin-bottom: 40px; }
+.pline {
+  font-size: 19px;
+  color: #3b3b3b;
+  line-height: 1.7;
+}
+
+/* Section header */
+.sec-head {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #373536;
+  border-bottom: 3px solid #373536;
+  padding-bottom: 7px;
+  margin-bottom: 32px;
+}
+
+/* Job entry */
+.job { margin-bottom: 54px; }
+
+/* Position header row */
+.job-hrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+.job-pos {
+  font-family: 'TGBonum', 'EB Garamond', Georgia, serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #111;
+}
+.job-right { display: flex; align-items: baseline; }
+.job-company {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #373536;
+  white-space: nowrap;
+  margin-right: 20px;
+}
+.job-dates {
+  font-size: 17px;
+  font-weight: 300;
+  color: #444;
+  white-space: nowrap;
+}
+
+/* Project */
+.proj { margin-bottom: 22px; }
+.proj-name {
+  font-size: 19px;
+  font-weight: 400;
+  color: #373536;
+  margin-bottom: 9px;
+}
+.proj-list {
+  list-style: disc;
+  padding-left: 23px;
+  margin: 0;
+}
+.proj-list li {
+  font-size: 19px;
+  color: #3b3b3b;
+  line-height: 1.6; margin-bottom: 1px;
+}
+
+/* ── Print ── */
+@media print {
+  body { background: white; }
+  #toolbar, #ed-overlay { display: none !important; }
+  #pw { padding: 0; }
+  #resume { box-shadow: none; width: 100%; }
+}

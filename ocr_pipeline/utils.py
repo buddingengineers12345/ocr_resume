@@ -115,7 +115,7 @@ def get_content_path() -> Path:
     if not path.exists():
         raise FileNotFoundError(
             f"ERROR: '{CONTENT_FILE}' not found in {TEMP_DIR}.\n"
-            "Run extract_values.py first to generate it."
+            "Run html_pipeline/extract_values.py first to generate it."
         )
     return path
 
