@@ -212,14 +212,26 @@ body {
 .ctext { flex: 1; word-break: break-word; }
 
 /* — Awards — */
-#sb-awards { width: 100%; padding: 0px 30px 0px 111px; }
+#sb-awards {
+  width: 303px;
+  padding: 0;
+  margin-left: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .arow {
   display: flex;
   align-items: flex-start; margin-bottom: 19px;
   color: var(--sidebar-text);
   font-size: 19px;
   line-height: 1.5;
+  width: max-content;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
+.award-text { text-align: left; }
 .adot {
   width: 11px;
   min-width: 11px;

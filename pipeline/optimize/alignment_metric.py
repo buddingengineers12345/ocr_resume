@@ -21,6 +21,8 @@ compute(csv_o1, csv_p1, img_o1, img_p1) -> dict
         mean_dy_sidebar float   (signed mean Δy for sidebar objects)
         mean_dx_contact float   (signed mean Δx for sidebar contact/award)
         drift_slope     float   (px of Δy added per px of y – bullet drift)
+        mean_height_scale float (mean((o1_height/p1_height)-1) across matched text)
+        mean_width_scale  float (mean((o1_width/p1_width)-1) across matched text)
         pairs_df        list[dict]   per-pair details for logging
 """
 
@@ -28,6 +30,7 @@ import csv
 import difflib
 import os
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -44,6 +47,12 @@ try:
     _HAVE_PIL = True
 except ImportError:
     _HAVE_PIL = False
+
+if _HAVE_PIL:
+    try:
+        _LANCZOS: Any = _PIL_Image.Resampling.LANCZOS
+    except AttributeError:
+        _LANCZOS = getattr(_PIL_Image, "LANCZOS")
 
 # ── Paths (workspace root = 3 levels up from this script's directory) ─────────────────
 WORKSPACE = Path(__file__).parent.parent.parent.resolve()
@@ -146,7 +155,9 @@ def _build_pairs(objs_o1: list[dict], objs_p1: list[dict]) -> list[dict]:
         pairs.append({
             "text": o1r["text"],
             "o1_x": o1r["x"],  "o1_y": o1r["y"],
+            "o1_w": o1r["width"], "o1_h": o1r["height"],
             "p1_x": best["x"], "p1_y": best["y"],
+            "p1_w": best["width"], "p1_h": best["height"],
             "dx": o1r["x"] - best["x"],
             "dy": o1r["y"] - best["y"],
         })
@@ -163,11 +174,11 @@ def _compute_ssim(img_o1: Path, img_p1: Path) -> float:
     try:
         SIZE = (1414, 2000)
         o1 = np.array(
-            _PIL_Image.open(img_o1).convert("RGB").resize(SIZE, _PIL_Image.LANCZOS),
+            _PIL_Image.open(img_o1).convert("RGB").resize(SIZE, _LANCZOS),
             dtype=np.float64,
         )
         p1 = np.array(
-            _PIL_Image.open(img_p1).convert("RGB").resize(SIZE, _PIL_Image.LANCZOS),
+            _PIL_Image.open(img_p1).convert("RGB").resize(SIZE, _LANCZOS),
             dtype=np.float64,
         )
         # Mask the top toolbar strip (first ~42 px) which differs by design
@@ -184,6 +195,7 @@ def _directional_metrics(pairs: list[dict]) -> dict:
     """Compute signed mean deltas and bullet drift slope."""
     main_dy, sidebar_dy, contact_dx = [], [], []
     bullet_y, bullet_dy = [], []
+    h_scales, w_scales = [], []
 
     for p in pairs:
         is_sidebar = p["o1_x"] < SIDEBAR_SPLIT_X
@@ -198,6 +210,12 @@ def _directional_metrics(pairs: list[dict]) -> dict:
         if "_Project_" in txt and "_Info_" in txt:
             bullet_y.append(p["o1_y"])
             bullet_dy.append(p["dy"])
+
+        # Text box scale is a proxy for font-size mismatch.
+        if p["p1_h"] > 0:
+            h_scales.append((p["o1_h"] / p["p1_h"]) - 1.0)
+        if p["p1_w"] > 0:
+            w_scales.append((p["o1_w"] / p["p1_w"]) - 1.0)
 
     # Drift slope via linear regression (Δy vs y for bullets)
     drift_slope = 0.0
@@ -218,6 +236,8 @@ def _directional_metrics(pairs: list[dict]) -> dict:
         "mean_dy_sidebar": _mean(sidebar_dy),
         "mean_dx_contact": _mean(contact_dx),
         "drift_slope":     drift_slope,
+        "mean_height_scale": _mean(h_scales),
+        "mean_width_scale": _mean(w_scales),
     }
 
 
@@ -247,7 +267,8 @@ def compute(
             "composite": 0.0, "alignment_pct": 0.0, "ssim": 0.0,
             "mean_excess": 9999.0, "n_pairs": 0, "n_aligned": 0,
             "mean_dy_main": 0.0, "mean_dy_sidebar": 0.0,
-            "mean_dx_contact": 0.0, "drift_slope": 0.0, "pairs_df": [],
+            "mean_dx_contact": 0.0, "drift_slope": 0.0,
+            "mean_height_scale": 0.0, "mean_width_scale": 0.0, "pairs_df": [],
         }
 
     # Per-pair alignment and excess error
@@ -284,6 +305,8 @@ def compute(
         "mean_dy_sidebar": round(dir_metrics["mean_dy_sidebar"], 2),
         "mean_dx_contact": round(dir_metrics["mean_dx_contact"], 2),
         "drift_slope":     round(dir_metrics["drift_slope"],     5),
+        "mean_height_scale": round(dir_metrics["mean_height_scale"], 4),
+        "mean_width_scale":  round(dir_metrics["mean_width_scale"], 4),
         "pairs_df":        pairs,
     }
 
@@ -300,6 +323,8 @@ def print_report(m: dict) -> None:
     print(f"  Δy sidebar  : {m['mean_dy_sidebar']:+.1f} px")
     print(f"  Δx contact  : {m['mean_dx_contact']:+.1f} px")
     print(f"  Drift slope : {m['drift_slope']:+.5f}")
+    print(f"  Height scale: {m['mean_height_scale']:+.2%}")
+    print(f"  Width scale : {m['mean_width_scale']:+.2%}")
     print(f"{'='*60}\n")
     # Worst 10 pairs
     worst = sorted(m["pairs_df"], key=lambda x: x["excess"], reverse=True)[:10]

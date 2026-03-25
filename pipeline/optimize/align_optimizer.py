@@ -119,6 +119,7 @@ _LOG_FIELDNAMES = [
     "phase", "iteration", "composite", "alignment_pct", "ssim",
     "mean_excess", "n_aligned", "n_pairs",
     "mean_dy_main", "mean_dy_sidebar", "mean_dx_contact", "drift_slope",
+    "mean_height_scale", "mean_width_scale",
     "applied_selector", "applied_prop", "applied_delta",
 ]
 
@@ -150,6 +151,8 @@ def _log_row(phase: str, iteration: int, m: dict,
         "mean_dy_sidebar":    m["mean_dy_sidebar"],
         "mean_dx_contact":    m["mean_dx_contact"],
         "drift_slope":        m["drift_slope"],
+        "mean_height_scale":  m["mean_height_scale"],
+        "mean_width_scale":   m["mean_width_scale"],
         "applied_selector":   selector,
         "applied_prop":       prop,
         "applied_delta":      "" if delta is None else delta,
@@ -166,6 +169,7 @@ def _print_iter(phase: str, it: int, m: dict, applied: str = "") -> None:
         f"  align={m['alignment_pct']:5.1f}%"
         f"  ssim={m['ssim']:.4f}"
         f"  excess={m['mean_excess']:5.1f} px"
+        f"  hscale={m['mean_height_scale']:+.2%}"
         f"{app}"
     )
 
@@ -313,8 +317,13 @@ TWEAK_CATALOGUE = [
     # ── Company / dates X ────────────────────────────────────────────────────
     (".job-company",     "letter-spacing",   [-1, -0.5, 0.5, 1]),
     (".job-company",     "margin-right",     [-4, -2, 2, 4, 8]),
-    (".job-dates",       "font-size",        [-1, 1, 2, 3]),
-    (".job-pos",         "font-size",        [-2, -1, 1, 2]),
+    (".job-dates",       "font-size",        [-2, -1, 1, 2, 3]),
+    (".job-pos",         "font-size",        [-3, -2, -1, 1, 2, 3]),
+    ("#r-name",          "font-size",        [-4, -2, -1, 1, 2, 4]),
+    (".proj-name",       "font-size",        [-2, -1, 1, 2]),
+    (".proj-list li",    "font-size",        [-1, 1, 2]),
+    (".ctext",           "font-size",        [-1, 1, 2]),
+    (".arow",            "font-size",        [-1, 1, 2]),
     (".job-hrow",        "margin-bottom",    [-2, -1, 1, 2, 4]),
     # ── General fine-tune ────────────────────────────────────────────────────
     (".pill",            "width",            [-8, -4, 4, 8, 12]),
@@ -333,13 +342,14 @@ def _direction_filter(deltas: list, m: dict, selector: str, prop: str) -> list:
     sb_y = m.get("mean_dy_sidebar", 0)
     sb_x = m.get("mean_dx_contact", 0)
     drift = m.get("drift_slope", 0)
+    h_scale = m.get("mean_height_scale", 0)
 
     # Map property → which metric it primarily affects
     # Positive delta → y increases (items move down), x increases (items move right)
     prop_region = {
         "padding-top": "main_y",   "padding-bottom": "sb_y",  "padding-left": "main_x",
         "margin-bottom": None,      "line-height": "drift",    "letter-spacing": "company_x",
-        "margin-right": None,       "font-size": None,         "width": None,
+        "margin-right": None,       "font-size": "font_scale",  "width": None,
     }.get(prop)
 
     if prop_region == "main_y":
@@ -353,6 +363,12 @@ def _direction_filter(deltas: list, m: dict, selector: str, prop: str) -> list:
     elif prop_region == "drift":
         # drift_slope > 0 → bullet spacing too large → decrease line-height
         if drift > 0.005: return [d for d in deltas if d < 0] or deltas
+    elif prop_region == "font_scale":
+        # Positive scale means Output_1 text boxes are larger than reference.
+        if h_scale > 0.03:
+            return [d for d in deltas if d < 0] or deltas
+        if h_scale < -0.03:
+            return [d for d in deltas if d > 0] or deltas
 
     return deltas
 
@@ -382,7 +398,13 @@ def phase2_hill_climb(mgr: CSSManager, baseline: dict,
         best_delta_delta     = None
 
         for selector, prop, raw_deltas in TWEAK_CATALOGUE:
-            deltas = _direction_filter(raw_deltas, best, selector, prop)
+            if isinstance(raw_deltas, list):
+                deltas_source = raw_deltas
+            elif isinstance(raw_deltas, tuple):
+                deltas_source = [*raw_deltas]
+            else:
+                continue
+            deltas = _direction_filter(deltas_source, best, selector, prop)
 
             # Get current value — handle padding shorthands
             if prop.startswith("padding-"):
@@ -426,28 +448,31 @@ def phase2_hill_climb(mgr: CSSManager, baseline: dict,
         # Apply the best delta found in this iteration
         if (best_delta_m is not None and
                 best_delta_composite - best["composite"] >= MIN_COMPOSITE_IMPROVE):
+            win_sel = best_delta_selector
+            win_prop = best_delta_prop
+            win_delta = best_delta_delta
+            if win_sel is None or win_prop is None or win_delta is None:
+                print("  [WARN] Winning delta state incomplete; skipping iteration")
+                continue
 
             # Apply the winning tweak cleanly
-            if best_delta_prop.startswith("padding-"):
-                side_key = best_delta_prop.replace("padding-", "")
-                curr_val = mgr.get_padding_side(best_delta_selector, side_key) or 0
-                mgr.set_padding_side(best_delta_selector, side_key,
-                                     round(curr_val + best_delta_delta, 3))
+            if win_prop.startswith("padding-"):
+                side_key = win_prop.replace("padding-", "")
+                curr_val = mgr.get_padding_side(win_sel, side_key) or 0
+                mgr.set_padding_side(win_sel, side_key,
+                                     round(curr_val + win_delta, 3))
             else:
-                curr_val = mgr.get_numeric(best_delta_selector, best_delta_prop) or 0
-                mgr.set_value(best_delta_selector, best_delta_prop,
-                              round(curr_val + best_delta_delta, 3))
+                curr_val = mgr.get_numeric(win_sel, win_prop) or 0
+                mgr.set_value(win_sel, win_prop, round(curr_val + win_delta, 3))
             # Re-render with the accepted change applied cleanly
             if not dry_run:
                 best = render_and_score()
             else:
                 best = best_delta_m
 
-            applied = (f"{best_delta_selector} :: {best_delta_prop} "
-                       f"Δ={best_delta_delta:+.2f}")
+            applied = f"{win_sel} :: {win_prop} Δ={win_delta:+.2f}"
             _print_iter("HILL", iteration, best, applied)
-            _log_row("hill", iteration, best,
-                     best_delta_selector, best_delta_prop, best_delta_delta)
+            _log_row("hill", iteration, best, win_sel, win_prop, win_delta)
             _save_css_snapshot(f"iter_{iteration:03d}")
             no_improve_streak = 0
 

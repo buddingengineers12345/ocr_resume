@@ -92,12 +92,12 @@
     <!-- Awards pill -->
     <div class="pill" id="sb-awards-pill">AWARDS</div>
     <div id="sb-awards">
-      <div class="arow"><div class="adot"></div><div>Award_1_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div>Award_2_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div>Award_3_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div>Award_4_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div>Award_5_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div>Award_6_with_information</div></div>
+      <div class="arow"><div class="adot"></div><div class="award-text">Award_1_with_information</div></div>
+      <div class="arow"><div class="adot"></div><div class="award-text">Award_2_with_information</div></div>
+      <div class="arow"><div class="adot"></div><div class="award-text">Award_3_with_information</div></div>
+      <div class="arow"><div class="adot"></div><div class="award-text">Award_4_with_information</div></div>
+      <div class="arow"><div class="adot"></div><div class="award-text">Award_5_with_information</div></div>
+      <div class="arow"><div class="adot"></div><div class="award-text">Award_6_with_information</div></div>
     </div>
 
   </div><!-- /sidebar -->
@@ -255,7 +255,8 @@ document.addEventListener('DOMContentLoaded', loadContentFromFile);
 // ── MD Parser ─────────────────────────────────────────────────────────
 function extractVal(raw) {
   const idx = raw.indexOf(' : ');
-  return idx === -1 ? raw.trim() : raw.slice(idx + 3).trim();
+  const val = idx === -1 ? raw.trim() : raw.slice(idx + 3).trim();
+  return val.replace(/\s*\(font_size\s*:\s*[0-9.]+\s*px\)\s*/i, '').trim();
 }
 
 function parseMD(md) {
@@ -381,7 +382,7 @@ function render(md) {
   setText('sb-awards-pill', d.awardsHeader || 'AWARDS');
   document.getElementById('sb-awards').innerHTML =
     d.awards.filter(Boolean).map(a =>
-      `<div class="arow"><div class="adot"></div><div>${esc(a)}</div></div>`
+      `<div class="arow"><div class="adot"></div><div class="award-text">${esc(a)}</div></div>`
     ).join('');
 
   // Profile

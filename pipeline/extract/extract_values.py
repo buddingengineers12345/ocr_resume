@@ -11,8 +11,15 @@ Usage:
   python pipeline/extract/extract_values.py   # from workspace root
 """
 
+import re
 from collections import Counter
 from pathlib import Path
+
+_FONT_SIZE_RE = re.compile(r'\s*\(font_size\s*:\s*[0-9.]+\s*px\)\s*', re.IGNORECASE)
+
+
+def _strip_font_size(value: str) -> str:
+    return _FONT_SIZE_RE.sub('', value).strip()
 
 
 def extract_values_from_md() -> None:
@@ -38,12 +45,20 @@ def extract_values_from_md() -> None:
             if "|" in line:
                 for part in line.split("|"):
                     part = part.strip()
-                    if ":" in part:
-                        value = part.split(":")[-1].strip()
+                    if " : " in part:
+                        value = _strip_font_size(part.split(" : ", 1)[-1].strip())
                         if value:
                             values.append(value)
+                    elif ":" in part:
+                        value = _strip_font_size(part.split(":", 1)[-1].strip())
+                        if value:
+                            values.append(value)
+            elif " : " in line:
+                value = _strip_font_size(line.split(" : ", 1)[-1].strip())
+                if value:
+                    values.append(value)
             elif ":" in line:
-                value = line.split(":")[-1].strip()
+                value = _strip_font_size(line.split(":", 1)[-1].strip())
                 if value:
                     values.append(value)
 
