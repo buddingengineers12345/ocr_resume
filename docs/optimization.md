@@ -1,8 +1,8 @@
 # Resume Layout Alignment Optimizer — Plan & Analysis
 
 ## Goal
-Align the rendered HTML resume (`image_reference/Output_1.png`) to the reference image
-(`image_reference/Page_1.png`) by modifying only `html_info/template.css`, iterating
+Align the rendered HTML resume (`generated/Output_1.png`) to the reference image
+(`source/references/Page_1.png`) by modifying only `source/template.css`, iterating
 until **≥ 90% of matched text-object pairs are within ±20 px in both x and y**.
 
 ---
@@ -10,8 +10,8 @@ until **≥ 90% of matched text-object pairs are within ±20 px in both x and y*
 ## Quantitative Pre-Analysis
 
 ### Matched pair count
-~61 exact-text-field matches between `output/Output_1/objects.csv` and
-`output/Page_1/objects.csv` (type=`text` only; `text_overlap` / `structural` excluded).
+~61 exact-text-field matches between `generated/ocr/Output_1/objects.csv` and
+`generated/ocr/Page_1/objects.csv` (type=`text` only; `text_overlap` / `structural` excluded).
 
 ### Per-region error summary (before any optimization)
 
@@ -33,7 +33,7 @@ Root cause: per-bullet spacing in the rendered HTML is 34.4 px, reference is 31.
 ## Root Cause Mapping
 
 | # | Symptom | Root CSS property | Current | Target | Δ |
-|---|---------|-------------------|---------|--------|---|
+|---|---------|---------|---------|-----------|---|
 | 1 | NAME 19 px too low | `#main padding-top` | 59 px | 40 px | −19 px |
 | 2 | Contact pill 32 px too high | `.photo-wrap padding-bottom` | 58 px | 90 px | +32 px |
 | 3 | Contact text 78 px too far left | `#sb-contact padding-left` | 46 px | 126 px | +80 px |
@@ -124,13 +124,13 @@ Uses signed metrics to pick delta direction; accepts improvement only if
 
 ```
 1. css_manager.apply_patch(selector, prop, new_val)
-2. python html_pipeline/render_html.py          → updates Output_1.png
-3. IMAGE_PATH=.../Output_1.png ./pipeline steps → updates output/Output_1/objects.csv
+2. python pipeline/render/render_html.py              → updates Output_1.png
+3. IMAGE_PATH=.../Output_1.png ./pipeline/run.sh     → updates generated/ocr/Output_1/objects.csv
 4. alignment_metric.compute() → composite score
 5. If improved: keep; else: css_manager.restore(snapshot)
 ```
 
-Page_1.png / Page_1/objects.csv are **never re-processed** during the loop.
+Page_1.png / generated/ocr/Page_1/objects.csv are **never re-processed** during the loop.
 
 ---
 
@@ -138,12 +138,12 @@ Page_1.png / Page_1/objects.csv are **never re-processed** during the loop.
 
 | File | Purpose |
 |------|---------|
-| `optimize_pipeline/alignment_metric.py` | Load CSVs, match pairs, compute all metrics |
-| `optimize_pipeline/css_manager.py` | Read / patch / restore template.css safely |
-| `optimize_pipeline/align_optimizer.py` | Main loop: warm start → drift fix → hill-climb |
-| `optimize_pipeline/optimization.md` | This document |
-| `optimize_pipeline/progress/` | CSS + overlap snapshots per iteration |
-| `optimize_pipeline/iteration_log.csv` | Per-iteration score history |
+| `pipeline/optimize/alignment_metric.py` | Load CSVs, match pairs, compute all metrics |
+| `pipeline/optimize/css_manager.py` | Read / patch / restore template.css safely |
+| `pipeline/optimize/align_optimizer.py` | Main loop: warm start → drift fix → hill-climb |
+| `docs/optimization.md` | This document |
+| `checkpoints/` | CSS + overlap snapshots per iteration |
+| `generated/optimize_logs.csv` | Per-iteration score history |
 
 ---
 

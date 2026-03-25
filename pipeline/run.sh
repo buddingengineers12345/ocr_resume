@@ -31,11 +31,12 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE="$(dirname "$SCRIPT_DIR")"
 MODE="${1:-full}"
 
-# ── Logging ───────────────────────────────────────────────────────────────────
-mkdir -p "$SCRIPT_DIR/temp"
-LOG_FILE="$SCRIPT_DIR/temp/pipeline.log"
+# ── Logging ─────────────────────────────────────────────────────────────
+mkdir -p "$WORKSPACE/generated/temp"
+LOG_FILE="$WORKSPACE/generated/temp/pipeline.log"
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
@@ -60,35 +61,35 @@ log "Python: $(command -v "$PYTHON")  ($("$PYTHON" --version 2>&1))"
 # ── Helpers ───────────────────────────────────────────────────────────────────
 run_step() {
     log "  -> $1"
-    "$PYTHON" "$SCRIPT_DIR/ocr_pipeline/$1" 2>&1 | tee -a "$LOG_FILE"
+    "$PYTHON" "$SCRIPT_DIR/ocr/$1" 2>&1 | tee -a "$LOG_FILE"
 }
 
 run_extract() {
-    log "  -> html_pipeline/extract_values.py"
-    "$PYTHON" "$SCRIPT_DIR/html_pipeline/extract_values.py" 2>&1 | tee -a "$LOG_FILE"
+    log "  -> extract/extract_values.py"
+    "$PYTHON" "$SCRIPT_DIR/extract/extract_values.py" 2>&1 | tee -a "$LOG_FILE"
 }
 
 run_annotate() {
     log "  -> image_annotation.py --output $1"
-    "$PYTHON" "$SCRIPT_DIR/ocr_pipeline/image_annotation.py" --output "$1" 2>&1 | tee -a "$LOG_FILE"
+    "$PYTHON" "$SCRIPT_DIR/ocr/image_annotation.py" --output "$1" 2>&1 | tee -a "$LOG_FILE"
 }
 
 run_cleanup() {
     log "  -> text_cleanup.py"
-    "$PYTHON" "$SCRIPT_DIR/ocr_pipeline/text_cleanup.py" 2>&1 | tee -a "$LOG_FILE"
+    "$PYTHON" "$SCRIPT_DIR/ocr/text_cleanup.py" 2>&1 | tee -a "$LOG_FILE"
 }
 
 run_order_objects() {
     log "  -> order_objects.py"
-    "$PYTHON" "$SCRIPT_DIR/ocr_pipeline/order_objects.py" 2>&1 | tee -a "$LOG_FILE"
+    "$PYTHON" "$SCRIPT_DIR/ocr/order_objects.py" 2>&1 | tee -a "$LOG_FILE"
 }
 
 clean_dirs() {
-    log "[clean] Removing temp/ and output/ folders …"
-    rm -rf "$SCRIPT_DIR/temp" "$SCRIPT_DIR/output"
-    mkdir -p "$SCRIPT_DIR/temp" "$SCRIPT_DIR/output"
+    log "[clean] Removing generated folder …"
+    rm -rf "$WORKSPACE/generated/temp" "$WORKSPACE/generated/ocr"
+    mkdir -p "$WORKSPACE/generated/temp" "$WORKSPACE/generated/ocr"
     # Re-open the log after cleaning temp/
-    mkdir -p "$SCRIPT_DIR/temp"
+    mkdir -p "$WORKSPACE/generated/temp"
     echo "========================================" > "$LOG_FILE"
     log "pipeline.sh  RESUMED AFTER CLEAN  mode=$MODE"
     echo "========================================" >> "$LOG_FILE"
@@ -96,11 +97,11 @@ clean_dirs() {
 }
 
 # ── Collect images ────────────────────────────────────────────────────────────
-# Returns a space-separated list of all *.png files in image_reference/
+# Returns a space-separated list of all *.png files in source/references/
 # (sorted, .DS_Store and non-png files excluded automatically by glob)
 collect_images() {
     local images=()
-    for f in "$SCRIPT_DIR/image_reference/"*.png; do
+    for f in "$WORKSPACE/source/references/"*.png; do
         [[ -f "$f" ]] && images+=("$f")
     done
     echo "${images[@]}"
@@ -147,7 +148,7 @@ case "$MODE" in
         run_extract
         IMAGES=$(collect_images)
         if [[ -z "$IMAGES" ]]; then
-            log "ERROR: No PNG images found in image_reference/"
+            log "ERROR: No PNG images found in source/references/"
             exit 1
         fi
         COUNT=0
@@ -164,7 +165,7 @@ case "$MODE" in
         run_extract
         IMAGES=$(collect_images)
         if [[ -z "$IMAGES" ]]; then
-            log "ERROR: No PNG images found in image_reference/"
+            log "ERROR: No PNG images found in source/references/"
             exit 1
         fi
         COUNT=0
@@ -182,7 +183,7 @@ case "$MODE" in
         run_extract
         IMAGES=$(collect_images)
         if [[ -z "$IMAGES" ]]; then
-            log "ERROR: No PNG images found in image_reference/"
+            log "ERROR: No PNG images found in source/references/"
             exit 1
         fi
         COUNT=0
@@ -210,5 +211,5 @@ log "========================================"
 log "pipeline.sh  DONE"
 log "========================================"
 echo ""
-echo "Done. Output saved to $SCRIPT_DIR/output/"
+echo "Done. Output saved to $WORKSPACE/generated/ocr/"
 echo "Log written to $LOG_FILE"

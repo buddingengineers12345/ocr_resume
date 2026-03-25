@@ -34,27 +34,28 @@ import time
 from pathlib import Path
 
 # ── Workspace root ─────────────────────────────────────────────────────────────
-WORKSPACE = Path(__file__).parent.parent.resolve()
-sys.path.insert(0, str(WORKSPACE))
+WORKSPACE = Path(__file__).parent.parent.parent.resolve()
+sys.path.insert(0, str(WORKSPACE / "pipeline" / "optimize"))
 
-from optimize_pipeline.alignment_metric import (
+from alignment_metric import (
     compute as metric_compute,
     print_report,
     MIN_COMPOSITE_IMPROVE,
 )
-from optimize_pipeline.css_manager import CSSManager
+from css_manager import CSSManager
 
 # ── Config ────────────────────────────────────────────────────────────────────
 TARGET_ALIGNMENT   = 90.0        # % – stop condition
 MAX_ITER_HILLCLIMB = 50          # safety cap on hill-climbing iterations
-PROGRESS_DIR       = WORKSPACE / "optimize_pipeline" / "progress"
-LOG_CSV            = WORKSPACE / "optimize_pipeline" / "iteration_log.csv"
+GENERATED_DIR      = WORKSPACE / "generated"
+PROGRESS_DIR       = GENERATED_DIR / "temp"
+LOG_CSV            = GENERATED_DIR / "optimize_logs.csv"
 
-CSS_PATH           = WORKSPACE / "html_info" / "template.css"
-IMG_O1             = WORKSPACE / "image_reference" / "Output_1.png"
-IMG_P1             = WORKSPACE / "image_reference" / "Page_1.png"
-CSV_O1             = WORKSPACE / "output" / "Output_1" / "objects.csv"
-CSV_P1             = WORKSPACE / "output" / "Page_1"   / "objects.csv"
+CSS_PATH           = WORKSPACE / "source" / "template.css"
+IMG_O1             = GENERATED_DIR / "Output_1.png"
+IMG_P1             = WORKSPACE / "source" / "references" / "Page_1.png"
+CSV_O1             = GENERATED_DIR / "ocr" / "Output_1" / "objects.csv"
+CSV_P1             = GENERATED_DIR / "ocr" / "Page_1" / "objects.csv"
 
 PYTHON = sys.executable
 
@@ -74,7 +75,7 @@ def _run(cmd: list, env: dict | None = None, label: str = "") -> int:
 def render_output() -> None:
     """Re-render resume.html → Output_1.png via Playwright (with 1 retry)."""
     for attempt in range(2):
-        rc = _run([PYTHON, "html_pipeline/render_html.py"], label="render")
+        rc = _run([PYTHON, str(WORKSPACE / "pipeline" / "render" / "render_html.py")], label="render")
         if rc == 0:
             return
         if attempt == 0:
@@ -92,11 +93,11 @@ def run_ocr_output_only() -> None:
     env = {"IMAGE_PATH": img_path}
 
     steps = [
-        "ocr_pipeline/prepare_pipeline.py",
-        "ocr_pipeline/text_extraction.py",
-        "ocr_pipeline/text_cleanup.py",
-        "ocr_pipeline/object_extraction.py",
-        "ocr_pipeline/order_objects.py",
+        str(WORKSPACE / "pipeline" / "ocr" / "prepare_pipeline.py"),
+        str(WORKSPACE / "pipeline" / "ocr" / "text_extraction.py"),
+        str(WORKSPACE / "pipeline" / "ocr" / "text_cleanup.py"),
+        str(WORKSPACE / "pipeline" / "ocr" / "object_extraction.py"),
+        str(WORKSPACE / "pipeline" / "ocr" / "order_objects.py"),
     ]
     for step in steps:
         rc = _run([PYTHON, step], env=env, label=step)

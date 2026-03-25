@@ -28,8 +28,8 @@ from pathlib import Path
 from typing import Optional
 
 # ── Default path ──────────────────────────────────────────────────────────────
-WORKSPACE    = Path(__file__).parent.parent.resolve()
-TEMPLATE_CSS = WORKSPACE / "html_info" / "template.css"
+WORKSPACE    = Path(__file__).parent.parent.parent.resolve()
+TEMPLATE_CSS = WORKSPACE / "source" / "template.css"
 
 
 # ── Snapshot ──────────────────────────────────────────────────────────────────

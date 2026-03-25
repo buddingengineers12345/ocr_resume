@@ -16,10 +16,10 @@ from pathlib import Path
 import numpy as np
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-# Workspace root = parent of the ocr_pipeline/ package directory
-SCRIPT_DIR = Path(__file__).parent.parent.resolve()
-IMAGE_DIR = SCRIPT_DIR / "image_reference"
-TEMP_DIR = SCRIPT_DIR / "temp"
+# Workspace root = 3 levels up from ocr_pipeline/ package directory
+SCRIPT_DIR = Path(__file__).parent.parent.parent.resolve()
+IMAGE_DIR = SCRIPT_DIR / "source" / "references"
+TEMP_DIR = SCRIPT_DIR / "generated" / "temp"
 IMAGE_FILE = "Page_1.png"
 CONTENT_FILE = "content.txt"
 
@@ -38,12 +38,12 @@ def get_image_output_dir(image_path: Path | None = None) -> Path:
     """Get the output directory for a given image.
     
     If image_path is None, uses find_image() to locate it.
-    Returns: output/{image_stem}/ where image_stem is filename without extension.
+    Returns: generated/ocr/{image_stem}/ where image_stem is filename without extension.
     """
     if image_path is None:
         image_path = find_image()
     image_stem = image_path.stem  # filename without extension
-    return SCRIPT_DIR / "output" / image_stem
+    return SCRIPT_DIR / "generated" / "ocr" / image_stem
 
 
 def get_output_csv(image_path: Path | None = None) -> Path:

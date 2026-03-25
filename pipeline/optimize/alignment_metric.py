@@ -45,12 +45,13 @@ try:
 except ImportError:
     _HAVE_PIL = False
 
-# ── Paths (workspace root = parent of this script's directory) ─────────────────
-WORKSPACE = Path(__file__).parent.parent.resolve()
-CSV_O1    = WORKSPACE / "output" / "Output_1" / "objects.csv"
-CSV_P1    = WORKSPACE / "output" / "Page_1"   / "objects.csv"
-IMG_O1    = WORKSPACE / "image_reference" / "Output_1.png"
-IMG_P1    = WORKSPACE / "image_reference" / "Page_1.png"
+# ── Paths (workspace root = 3 levels up from this script's directory) ─────────────────
+WORKSPACE = Path(__file__).parent.parent.parent.resolve()
+GENERATED_DIR = WORKSPACE / "generated"
+CSV_O1    = GENERATED_DIR / "ocr" / "Output_1" / "objects.csv"
+CSV_P1    = GENERATED_DIR / "ocr" / "Page_1"   / "objects.csv"
+IMG_O1    = GENERATED_DIR / "Output_1.png"
+IMG_P1    = WORKSPACE / "source" / "references" / "Page_1.png"
 
 ALIGN_THRESHOLD   = 20   # px – both Δx and Δy must be within this
 SIDEBAR_SPLIT_X   = 540  # px – objects left of this are "sidebar"

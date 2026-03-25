@@ -37,17 +37,17 @@ from pathlib import Path
 from PIL import Image
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
-# ── Paths (workspace root = parent of this script's directory) ─────────────────
+# ── Paths (workspace root = 3 levels up from this script) ─────────────────
 SCRIPT_DIR = Path(__file__).parent.resolve()
-WORKSPACE  = SCRIPT_DIR.parent
+WORKSPACE  = SCRIPT_DIR.parent.parent.parent
 
-DEFAULT_TEMPLATE     = WORKSPACE / "html_info"      / "template.html"
-DEFAULT_CSS_TEMPLATE = WORKSPACE / "html_info"      / "template.css"
-DEFAULT_MD_FILE      = WORKSPACE / "html_info"      / "content.md"
-DEFAULT_RESUME       = SCRIPT_DIR                   / "resume.html"
-DEFAULT_RESUME_CSS   = SCRIPT_DIR                   / "resume.css"
-DEFAULT_OUT          = WORKSPACE / "image_reference" / "Output_1.png"
-LOG_FILE         = WORKSPACE / "temp"            / "render_html.log"
+DEFAULT_TEMPLATE     = WORKSPACE / "source"        / "template.html"
+DEFAULT_CSS_TEMPLATE = WORKSPACE / "source"        / "template.css"
+DEFAULT_MD_FILE      = WORKSPACE / "source"        / "content.md"
+DEFAULT_RESUME       = WORKSPACE / "generated"     / "resume.html"
+DEFAULT_RESUME_CSS   = WORKSPACE / "generated"     / "resume.css"
+DEFAULT_OUT          = WORKSPACE / "generated"     / "Output_1.png"
+LOG_FILE         = WORKSPACE / "generated" / "temp" / "render_html.log"
 
 # ── Logging ────────────────────────────────────────────────────────────────────
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -80,11 +80,11 @@ def build_resume_html(
     template_html = template_path.read_text(encoding="utf-8")
 
     # ── CSS: copy template.css → resume.css with corrected font paths ─────────
-    # Fonts live at html_info/fonts/; resume.css lives in html_pipeline/,
-    # so relative paths need to go up one level into html_info/.
+    # Fonts live at source/fonts/; resume.css lives in generated/,
+    # so relative paths need to go up one level and over into source/.
     log.info("[build] Reading CSS      : %s", css_template_path)
     css_content = css_template_path.read_text(encoding="utf-8")
-    css_out = css_content.replace("./fonts/", "../html_info/fonts/")
+    css_out = css_content.replace("./fonts/", "../source/fonts/")
     css_out_path.parent.mkdir(parents=True, exist_ok=True)
     css_out_path.write_text(css_out, encoding="utf-8")
     log.info("[build] resume.css written → %s", css_out_path)
