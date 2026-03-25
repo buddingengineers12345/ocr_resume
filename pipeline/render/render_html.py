@@ -242,7 +242,7 @@ def apply_font_vars_to_css(css_content: str, font_vars: dict[str, str]) -> str:
         if not size:
             continue
         pattern = rf"({re.escape(css_var)}\s*:\s*)[^;]+;"
-        updated, _ = re.subn(pattern, rf"\\1{size};", updated)
+        updated, _ = re.subn(pattern, rf"\g<1>{size};", updated)
     return updated
 
 

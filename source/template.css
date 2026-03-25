@@ -41,15 +41,15 @@
   /* Typography scales (font sizes) */
   --fs-name: 84px;
   --fs-pill: 32px;
-  --fs-contact-item: 18px;
-  --fs-awards-item: 16px;
-  --fs-profile-item: 18px;
+  --fs-contact-item: 20px;
+  --fs-awards-item: 20px;
+  --fs-profile-item: 22px;
   --fs-work-header: 32px;
   --fs-job-pos: 24px;
-  --fs-job-company: 18px;
-  --fs-job-dates: 18px;
-  --fs-proj-name: 18px;
-  --fs-bullet: 16px;
+  --fs-job-company: 20px;
+  --fs-job-dates: 20px;
+  --fs-proj-name: 20px;
+  --fs-bullet: 18px;
 }
 
 /* ============================================================================
@@ -235,7 +235,7 @@ body {
 .photo-wrap {
   width: 100%;
   display: flex;
-  justify-content: center; padding: 44px 0px 90px 0px;
+  justify-content: center; padding: 44px 0px 77px 0px;
 }
 
 .photo-circle {
@@ -355,14 +355,14 @@ body {
   font-size: var(--fs-name);
   font-weight: 400;
   line-height: 1;
-  margin-bottom: 19px;
+  margin-bottom: 33px;
   color: #111;
   letter-spacing: -0.5px;
 }
 
 /* Profile section */
 #profile {
-  margin-bottom: 40px;
+  margin-bottom: 42px;
 }
 
 .pline {
@@ -380,7 +380,7 @@ body {
   color: var(--main-text);
   border-bottom: 3px solid var(--main-text);
   padding-bottom: 7px;
-  margin-bottom: 32px;
+  margin-bottom: 19px;
 }
 
 /* Job entry (position) */
@@ -393,7 +393,7 @@ body {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 9px;
+  margin-bottom: 13px;
 }
 
 .job-pos {
@@ -425,13 +425,13 @@ body {
 
 /* Project within a job */
 .proj {
-  margin-bottom: 22px;
+  margin-bottom: 25px;
 }
 
 .proj-name {
   font-size: var(--fs-proj-name);
   font-weight: 400;
-  margin-bottom: 5px;
+  margin-bottom: 16px;
   color: var(--main-text);
 }
 
@@ -443,7 +443,7 @@ body {
 
 .proj-list li {
   font-size: var(--fs-bullet);
-  line-height: 1.6; margin-bottom: 1px;
+  line-height: 1.75; margin-bottom: 1px;
   color: #3b3b3b;
 }
 
