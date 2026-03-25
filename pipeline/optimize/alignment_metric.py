@@ -1,9 +1,45 @@
 """alignment_metric — compute alignment and similarity metrics.
 
-Provides tools to compare the rendered output (Output_1) against the
-reference (Page_1) using per-object CSV alignment and optional SSIM image
-similarity. The main entry is ``compute(...)`` which returns a dictionary of
+**Purpose:**
+Compares rendered output (Output_1.png/CSV) against reference (Page_1.png/CSV)
+using per-object alignment analysis and image similarity. Returns comprehensive
 diagnostic metrics used by the optimizer to guide CSS adjustments.
+
+**Metrics computed:**
+
+**Alignment metrics:**
+- alignment_pct: Percentage of text objects within ±20px threshold
+- n_aligned / n_pairs: Count of matched and total pairs
+- mean_dy_main / mean_dy_sidebar: Mean Y-offset by region
+- mean_dx_contact / mean_dx_awards: Mean X-offset by context
+
+**Region-specific alignment:**
+- Sidebar vs. main panel: Split at x=540px
+- Sections: Contact, Awards (tracked separately for detailed analysis)
+- Award alignment_pct: Separate alignment metric for awards section
+
+**Image similarity:**
+- SSIM: Structural Similarity Index (0.0-1.0, higher is better)
+- Mean Excess: Average pixel-level deviation magnitude
+
+**Composite scoring:**
+- weighted_alignment_pct: Weighted combination of various alignment metrics
+- composite: Final optimization score (0-100%)
+
+**Text matching:**
+- Fuzzy string matching to pair Output_1 text with Page_1 text
+- Handles ~15% variation (FUZZY_RATIO = 0.85) for OCR errors
+- Excludes very short (<4 char) fragments
+- Normalizes text: lowercase, strip whitespace, standardize dashes
+
+**Input files:**
+- generated/ocr/Output_1/objects.csv (rendered output OCR)
+- generated/ocr/Page_1/objects.csv (reference OCR)
+- generated/Output_1.png (rendered output image, for SSIM)
+- source/references/Page_1.png (reference image, for SSIM)
+- generated/temp/content.txt or context.txt (context for section detection)
+
+**Main entry:** compute() returns a dict with all metrics
 """
 
 import csv

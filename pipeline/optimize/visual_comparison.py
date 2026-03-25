@@ -1,10 +1,38 @@
 #!/usr/bin/env python3
 """visual_comparison — generate overlay, side-by-side and diff heatmap.
 
-Compares the rendered ``generated/Output_1.png`` against the reference
-``source/references/Page_1.png`` and writes comparison artifacts into
-``generated/comparison/`` for quick visual inspection of alignment and
-structural differences.
+**Purpose:**
+Creates visual debugging artifacts comparing rendered output (Output_1.png)
+against reference (Page_1.png). Multiple visualization techniques to inspect
+alignment, identify mismatches, and verify optimization progress.
+
+**Output artifacts (in generated/comparison/):**
+
+1. **overlay_comparison.png:**
+   - Grayscale overlay: Red channel = rendered, Green channel = reference
+   - Magenta areas = perfect pixel alignment
+   - Red/Cyan/Green = misalignment regions (useful for spotting shifts)
+
+2. **side_by_side_comparison.png:**
+   - Horizontal juxtaposition of rendered (left) and reference (right)
+   - Simple visual comparison for layout verification
+
+3. **difference_heatmap.png:**
+   - Heatmap showing pixel-level differences
+   - Redder = larger deviation, bluer = closer match
+   - Highlights regions where rendering diverged most
+
+**Usage:**
+    python pipeline/optimize/visual_comparison.py
+
+**Inputs:**
+- generated/Output_1.png (current rendered resume)
+- source/references/Page_1.png (reference resume)
+
+**Outputs:**
+- generated/comparison/overlay_comparison.png
+- generated/comparison/side_by_side_comparison.png
+- generated/comparison/difference_heatmap.png
 """
 
 import sys
@@ -29,7 +57,11 @@ OUTPUT_DIR = WORKSPACE / "generated" / "comparison"
 # ────────────────────────────────────────────────────────────────────────────
 
 def validate_inputs():
-    """Check that both input images exist"""
+    """Check that both input images exist and are readable.
+    
+    Returns:
+        bool: True if both images found, False otherwise
+    """
     if not OUTPUT_IMAGE.exists():
         print(f"ERROR: Output image not found: {OUTPUT_IMAGE}")
         return False
@@ -45,10 +77,22 @@ def validate_inputs():
 # ────────────────────────────────────────────────────────────────────────────
 
 def create_overlay_comparison():
-    """
-    Create overlay showing alignment between rendered and reference.
-    Red channel = Output_1, Green channel = Page_1
-    Magenta areas = perfect alignment, Cyan/Red/Green = misalignment
+    """Create color overlay showing pixel-level alignment.
+    
+    **Visualization:**
+    - Red channel = Rendered output (Output_1)
+    - Green channel = Reference (Page_1)
+    - Magenta areas = Perfect pixel alignment
+    - Pure Red/Cyan/Green = Misaligned regions
+    
+    **Interpretation:**
+    - Magenta = output and reference pixels both bright (aligned text)
+    - Red = output text where reference is blank
+    - Green = reference text where output is blank
+    - Black = both blank (good match)
+    
+    Returns:
+        bool: True on success
     """
     print("[overlay] Loading images...")
     

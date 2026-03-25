@@ -249,7 +249,7 @@ stage_optimize() {
     fi
     
     log "Running alignment optimizer (max 5 hill-climb steps) …"
-    run_cmd "$PYTHON" "$WORKSPACE/pipeline/optimize/align_optimizer.py" --max-steps 5 || return 1
+    run_cmd "$PYTHON" "$WORKSPACE/pipeline/optimize/align_optimizer.py" --max-steps 1 || return 1
 
     if [[ -f "$WORKSPACE/pipeline/optimize/visual_comparison.py" ]]; then
         log "Generating post-optimization overlap preview …"

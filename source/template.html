@@ -1,233 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Resume</title>
-<link rel="stylesheet" href="./template.css"/>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-</head>
-<body>
-
-<!-- ════════════════════════════════════
-     TOOLBAR
-════════════════════════════════════ -->
-<div id="toolbar">
-  <div id="toolbar-title">Resume</div>
-  <button class="tbtn" id="btn-edit">✏ Edit MD</button>
-  <button class="tbtn" id="btn-png">↓ Save PNG</button>
-  <button class="tbtn" id="btn-pdf">↓ Save PDF</button>
-</div>
-
-<!-- ════════════════════════════════════
-     MD EDITOR OVERLAY
-════════════════════════════════════ -->
-<div id="ed-overlay">
-  <div id="ed-box">
-    <div id="ed-head">
-      Edit Markdown Content
-      <span id="ed-hint">Live preview as you type · Apply to confirm</span>
-    </div>
-    <textarea id="md-ta" spellcheck="false"></textarea>
-    <div id="ed-foot">
-      <button class="tbtn" id="btn-cancel">Cancel</button>
-      <button class="tbtn primary" id="btn-apply">Apply Changes</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════════════
-     RESUME  — fully pre-rendered HTML
-     (no JS needed to display content)
-════════════════════════════════════ -->
-<div id="pw">
-<div id="resume">
-
-  <!-- ── SIDEBAR ── -->
-  <div id="sidebar">
-
-    <div class="photo-wrap">
-      <div class="photo-circle" id="photo-circle"></div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Professional resume with interactive markdown editing" />
+    <title>Resume</title>
+    <link rel="stylesheet" href="./template.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+      integrity="sha512-BNnt0zJ4Y1H0w8+AEm+Kj6bq1V2iWZvpAEJFo6rDIe+bxzGk+V3L2+DcKGKy6/zgyg4aKw5S+cQNPy7b2+7nQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+      integrity="sha512-qZvrmS2ukL+ecEwFDO8+GmzcoYq+3dV9zpCXDkRHI1UJByMW+8nYY0aSk9OJRNZ5xRzAxBJc8164+I95mP9YQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+  </head>
+  <body>
+  <body>
+    <!-- Toolbar with controls -->
+    <div id="toolbar">
+      <div id="toolbar-title">Resume</div>
+      <button class="tbtn" id="btn-edit">✏ Edit MD</button>
+      <button class="tbtn" id="btn-png">↓ Save PNG</button>
+      <button class="tbtn" id="btn-pdf">↓ Save PDF</button>
     </div>
 
-    <!-- Contact pill -->
-    <div class="pill" id="sb-contact-pill">CONTACT_ME</div>
-    <div id="sb-contact">
-
-      <div class="crow" id="crow-phone">
-        <div class="cicon">
-          <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+    <!-- Modal editor overlay for markdown content -->
+    <div id="ed-overlay">
+      <div id="ed-box">
+        <div id="ed-head">
+          Edit Markdown Content
+          <span id="ed-hint">Live preview as you type · Apply to confirm</span>
         </div>
-        <div class="ctext" id="f-phone">Phone_Number</div>
-      </div>
-
-      <div class="crow" id="crow-email">
-        <div class="cicon">
-          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-        </div>
-        <div class="ctext" id="f-email">Email</div>
-      </div>
-
-      <div class="crow" id="crow-kaggle">
-        <div class="cicon">
-          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-        </div>
-        <div class="ctext" id="f-kaggle">Kaggle</div>
-      </div>
-
-      <div class="crow" id="crow-addr">
-        <div class="cicon">
-          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-        </div>
-        <div class="ctext">
-          <div id="f-addr1">Address_Line_1</div>
-          <div id="f-addr2">Address_Line_2</div>
+        <textarea
+          id="md-ta"
+          spellcheck="false"
+          aria-label="Markdown editor for resume content"
+        ></textarea>
+        <div id="ed-foot">
+          <button class="tbtn" id="btn-cancel">Cancel</button>
+          <button class="tbtn primary" id="btn-apply">Apply Changes</button>
         </div>
       </div>
-
-    </div><!-- /sb-contact -->
-
-    <!-- Awards pill -->
-    <div class="pill" id="sb-awards-pill">AWARDS</div>
-    <div id="sb-awards">
-      <div class="arow"><div class="adot"></div><div class="award-text">Award_1_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div class="award-text">Award_2_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div class="award-text">Award_3_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div class="award-text">Award_4_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div class="award-text">Award_5_with_information</div></div>
-      <div class="arow"><div class="adot"></div><div class="award-text">Award_6_with_information</div></div>
     </div>
 
-  </div><!-- /sidebar -->
+    <!-- Main resume container (pre-rendered HTML, no JS needed for display) -->
+    <div id="pw">
+      <div id="resume">
 
-  <!-- ── MAIN CONTENT ── -->
-  <div id="main">
+        <!-- Sidebar: photo, contact, awards -->
+        <div id="sidebar">
+          <div class="photo-wrap">
+            <div class="photo-circle" id="photo-circle"></div>
+          </div>
 
-    <div id="r-name">NAME</div>
+          <!-- Contact section -->
+          <div class="pill" id="sb-contact-pill">CONTACT_ME</div>
+          <div id="sb-contact">
+            <div class="crow" id="crow-phone">
+              <div class="cicon">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"
+                  />
+                </svg>
+              </div>
+              <div class="ctext" id="f-phone">Phone_Number</div>
+            </div>
 
-    <div id="profile">
-      <div class="pline">Profile_Information_1</div>
-      <div class="pline">Profile_Information_2</div>
-      <div class="pline">Profile_Information_3</div>
-      <div class="pline">Profile_Information_4</div>
-    </div>
+            <div class="crow" id="crow-email">
+              <div class="cicon">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
+                  />
+                </svg>
+              </div>
+              <div class="ctext" id="f-email">Email</div>
+            </div>
 
-    <div class="sec-head" id="r-work-head">WORK_EXPERIENCE</div>
+            <div class="crow" id="crow-kaggle">
+              <div class="cicon">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"
+                  />
+                </svg>
+              </div>
+              <div class="ctext" id="f-kaggle">Kaggle</div>
+            </div>
 
-    <div id="work">
+            <div class="crow" id="crow-addr">
+              <div class="cicon">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                  />
+                </svg>
+              </div>
+              <div class="ctext">
+                <div id="f-addr1">Address_Line_1</div>
+                <div id="f-addr2">Address_Line_2</div>
+              </div>
+            </div>
+          </div>
 
-      <!-- ── POSITION 1 ── -->
-      <div class="job">
-        <div class="job-hrow">
-          <div class="job-pos">POSITION_1</div>
-          <div class="job-right">
-            <div class="job-company">Company_1A</div>
-            <div class="job-dates">2020A–2023A</div>
+          <!-- Awards section -->
+          <div class="pill" id="sb-awards-pill">AWARDS</div>
+          <div id="sb-awards">
+            <div class="arow"><div class="adot"></div><div class="award-text">Award_1_with_information</div></div>
+            <div class="arow"><div class="adot"></div><div class="award-text">Award_2_with_information</div></div>
+            <div class="arow"><div class="adot"></div><div class="award-text">Award_3_with_information</div></div>
+            <div class="arow"><div class="adot"></div><div class="award-text">Award_4_with_information</div></div>
+            <div class="arow"><div class="adot"></div><div class="award-text">Award_5_with_information</div></div>
+            <div class="arow"><div class="adot"></div><div class="award-text">Award_6_with_information</div></div>
           </div>
         </div>
 
-        <div class="proj">
-          <div class="proj-name">Position_1_Project_1</div>
-          <ul class="proj-list">
-            <li>Position_1_Project_1_Project_Info_1</li>
-            <li>Position_1_Project_1_Project_Info_2</li>
-            <li>Position_1_Project_1_Project_Info_3</li>
-            <li>Position_1_Project_1_Project_Info_4</li>
-            <li>Position_1_Project_1_Project_Info_5</li>
-            <li>Position_1_Project_1_Project_Info_6</li>
-          </ul>
-        </div>
+        <!-- Main content area: name, profile, work history -->
+        <div id="main">
+          <div id="r-name">NAME</div>
 
-        <div class="proj">
-          <div class="proj-name">Position_1_Project_2</div>
-          <ul class="proj-list">
-            <li>Position_1_Project_2_Project_Info_1</li>
-            <li>Position_1_Project_2_Project_Info_2</li>
-            <li>Position_1_Project_2_Project_Info_3</li>
-            <li>Position_1_Project_2_Project_Info_4</li>
-            <li>Position_1_Project_2_Project_Info_5</li>
-            <li>Position_1_Project_2_Project_Info_6</li>
-          </ul>
-        </div>
-      </div><!-- /job 1 -->
+          <div id="profile">
+            <div class="pline">Profile_Information_1</div>
+            <div class="pline">Profile_Information_2</div>
+            <div class="pline">Profile_Information_3</div>
+            <div class="pline">Profile_Information_4</div>
+          </div>
 
-      <!-- ── POSITION 2 ── -->
-      <div class="job">
-        <div class="job-hrow">
-          <div class="job-pos">POSITION_2</div>
-          <div class="job-right">
-            <div class="job-company">Company_1B</div>
-            <div class="job-dates">2020B–2023B</div>
+          <div class="sec-head" id="r-work-head">WORK_EXPERIENCE</div>
+
+          <div id="work">
+            <!-- Work history entries populated by JavaScript -->
           </div>
         </div>
+      </div>
+    </div>
+    <!-- ========================================================================
+         JAVASCRIPT: Resume Markdown Editor and Export
+         ========================================================================
+         This script handles:
+         1. Loading resume content from content.md file
+         2. Parsing markdown into structured data
+         3. Rendering data into the resume HTML template
+         4. Modal editor for live markdown editing
+         5. PNG and PDF export functionality
+        ======================================================================== -->
+    <script>
+      // ========================================================================
+      // CONSTANTS & STATE
+      // ========================================================================
 
-        <div class="proj">
-          <div class="proj-name">Position_2_Project_1</div>
-          <ul class="proj-list">
-            <li>Position_2_Project_1_Project_Info_1</li>
-            <li>Position_2_Project_1_Project_Info_2</li>
-            <li>Position_2_Project_1_Project_Info_3</li>
-            <li>Position_2_Project_1_Project_Info_4</li>
-            <li>Position_2_Project_1_Project_Info_5</li>
-            <li>Position_2_Project_1_Project_Info_6</li>
-          </ul>
-        </div>
-
-        <div class="proj">
-          <div class="proj-name">Position_2_Project_2</div>
-          <ul class="proj-list">
-            <li>Position_2_Project_2_Project_Info_1</li>
-            <li>Position_2_Project_2_Project_Info_2</li>
-            <li>Position_2_Project_2_Project_Info_3</li>
-            <li>Position_2_Project_2_Project_Info_4</li>
-            <li>Position_2_Project_2_Project_Info_5</li>
-            <li>Position_2_Project_2_Project_Info_6</li>
-          </ul>
-        </div>
-      </div><!-- /job 2 -->
-
-      <!-- ── POSITION 3 ── -->
-      <div class="job">
-        <div class="job-hrow">
-          <div class="job-pos">POSITION_3</div>
-          <div class="job-right">
-            <div class="job-company">Company_1C</div>
-            <div class="job-dates">2020C–2023C</div>
-          </div>
-        </div>
-
-        <div class="proj">
-          <div class="proj-name">Position_3_Project_1</div>
-          <ul class="proj-list">
-            <li>Position_3_Project_1_Project_Info_1</li>
-            <li>Position_3_Project_1_Project_Info_2</li>
-            <li>Position_3_Project_1_Project_Info_3</li>
-            <li>Position_3_Project_1_Project_Info_4</li>
-            <li>Position_3_Project_1_Project_Info_5</li>
-            <li>Position_3_Project_1_Project_Info_6</li>
-          </ul>
-        </div>
-      </div><!-- /job 3 -->
-
-    </div><!-- /work -->
-  </div><!-- /main -->
-
-</div><!-- /resume -->
-</div><!-- /pw -->
-
-<!-- ════════════════════════════════════
-     JAVASCRIPT  — editor + export only
-     (content above is fully static HTML)
-════════════════════════════════════ -->
-<script>
-// ── Load markdown content from external file (content.md) ────────────────
-// This fetches resume content from content.md instead of embedding it directly.
-// This makes it easy to update resume content separately from the template.
-
-// Fallback default MD (in case fetch fails)
-const DEFAULT_MD = `# NAME : NAME
+      const DEFAULT_MD = `# NAME : NAME
 
 ## CONTACT : CONTACT_ME
 
@@ -235,331 +167,525 @@ PHONE_NUMBER : Phone_Number
 EMAIL : Email
 `;
 
-let currentMD = DEFAULT_MD;
+      let currentMD = DEFAULT_MD;
 
-// Load content from content.md file
-async function loadContentFromFile() {
-  try {
-    const response = await fetch('./content.md');
-    if (!response.ok) throw new Error('Failed to load content.md');
-    currentMD = await response.text();
-    render(currentMD);
-  } catch (error) {
-    console.error('Error loading content.md:', error);
-  }
-}
+      // ========================================================================
+      // FILE LOADING
+      // ========================================================================
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', loadContentFromFile);
+      /**
+       * Load resume content from external content.md file
+       * Falls back to DEFAULT_MD if fetch fails
+       */
+      async function loadContentFromFile() {
+        try {
+          const response = await fetch('./content.md');
+          if (!response.ok) throw new Error('Failed to load content.md');
+          currentMD = await response.text();
+          render(currentMD);
+        } catch (error) {
+          console.error('Error loading content.md:', error);
+          render(currentMD);
+        }
+      }
 
-// ── MD Parser ─────────────────────────────────────────────────────────
-function parseValueAndFont(raw) {
-  const idx = raw.indexOf(' : ');
-  const val = idx === -1 ? raw.trim() : raw.slice(idx + 3).trim();
-  const m = val.match(/\(font_size\s*:\s*([0-9.]+\s*px)\)\s*$/i);
-  if (!m) return { text: val.trim(), fontSize: '' };
-  return {
-    text: val.replace(/\s*\(font_size\s*:\s*[0-9.]+\s*px\)\s*$/i, '').trim(),
-    fontSize: m[1].replace(/\s+/g, '')
-  };
-}
+      /**
+       * Initialize on page load
+       */
+      document.addEventListener('DOMContentLoaded', loadContentFromFile);
 
-function extractVal(raw) {
-  return parseValueAndFont(raw).text;
-}
+      // ========================================================================
+      // MARKDOWN PARSING
+      // ========================================================================
 
-function extractFont(raw) {
-  return parseValueAndFont(raw).fontSize;
-}
+      /**
+       * Extract value and optional font size from raw text
+       * Format: "Label : Value (font_size: 18px)" or just "Label : Value"
+       * @param {string} raw - Raw markdown line
+       * @returns {object} - { text: string, fontSize: string }
+       */
+      function parseValueAndFont(raw) {
+        const idx = raw.indexOf(' : ');
+        const val = idx === -1 ? raw.trim() : raw.slice(idx + 3).trim();
+        const m = val.match(/\(font_size\s*:\s*([0-9.]+\s*px)\)\s*$/i);
 
-function parseMD(md) {
-  const lines = md.split('\n');
-  const d = {
-    name: '', contactHeader: '', awardsHeader: '',
-    phone: '', email: '', kaggle: '', addr1: '', addr2: '',
-    awards: [], profile: [],
-    workHeader: '', jobs: [],
-    fonts: {
-      name: '',
-      pill: '',
-      contactItem: '',
-      awardsItem: '',
-      profileItem: '',
-      workHeader: '',
-      jobPos: '',
-      jobCompany: '',
-      jobDates: '',
-      projName: '',
-      bullet: ''
-    }
-  };
-  let i = 0, job = null, proj = null;
+        if (!m) {
+          return { text: val.trim(), fontSize: '' };
+        }
 
-  function setFontOnce(key, size) {
-    if (size && !d.fonts[key]) d.fonts[key] = size;
-  }
+        return {
+          text: val.replace(/\s*\(font_size\s*:\s*[0-9.]+\s*px\)\s*$/i, '').trim(),
+          fontSize: m[1].replace(/\s+/g, '')
+        };
+      }
 
-  function flushProj() { if (proj && job) { job.projects.push(proj); proj = null; } }
-  function flushJob()  { flushProj(); if (job) { d.jobs.push(job); job = null; } }
+      /**
+       * Extract just the text value from raw markdown
+       * @param {string} raw - Raw markdown line
+       * @returns {string} - Text value without font size metadata
+       */
+      function extractVal(raw) {
+        return parseValueAndFont(raw).text;
+      }
 
-  while (i < lines.length) {
-    const t = lines[i].trim();
+      /**
+       * Extract font size directive from raw markdown
+       * @param {string} raw - Raw markdown line
+       * @returns {string} - Font size value (e.g., "18px") or empty string
+       */
+      function extractFont(raw) {
+        return parseValueAndFont(raw).fontSize;
+      }
 
-    if (t.startsWith('# ')) {
-      d.name = extractVal(t.slice(2));
-      setFontOnce('name', extractFont(t.slice(2)));
-    }
-    else if (t.startsWith('## ')) {
-      const inner = t.slice(3);
-      const lbl = inner.split(' : ')[0].toLowerCase();
-      const hdr = extractVal(inner);
-      const hdrSize = extractFont(inner);
-      if (lbl.includes('contact')) {
-        d.contactHeader = hdr; i++;
-        setFontOnce('pill', hdrSize);
-        while (i < lines.length) {
-          const kv = lines[i].trim();
-          if (kv.startsWith('#')) break;   // next section — stop
-          if (!kv) { i++; continue; }      // blank line — skip, keep reading
-          if (!kv.startsWith('- ')) {
-            const key = kv.split(' : ')[0].trim().toUpperCase();
-            const val = extractVal(kv);
-            const fz = extractFont(kv);
-            if      (key === 'PHONE_NUMBER')  d.phone = val;
-            else if (key === 'EMAIL')          d.email = val;
-            else if (key === 'KAGGLE')         d.kaggle = val;
-            else if (key === 'ADDRESS_LINE_1') d.addr1 = val;
-            else if (key === 'ADDRESS_LINE_2') d.addr2 = val;
-            setFontOnce('contactItem', fz);
+      /**
+       * Parse markdown into structured resume data
+       * Supports:
+       *   # Heading (name)
+       *   ## Heading (sections: CONTACT, AWARD, PROFILE, WORK)
+       *   ### Position | Company | Dates (job entry)
+       *   #### Project Name (project under job)
+       *   - Bullet point (project item)
+       *
+       * @param {string} md - Markdown text
+       * @returns {object} - Parsed resume data structure
+       */
+      function parseMD(md) {
+        const lines = md.split('\n');
+        const d = {
+          name: '',
+          contactHeader: '',
+          awardsHeader: '',
+          phone: '',
+          email: '',
+          kaggle: '',
+          addr1: '',
+          addr2: '',
+          awards: [],
+          profile: [],
+          workHeader: '',
+          jobs: [],
+          fonts: {
+            name: '',
+            pill: '',
+            contactItem: '',
+            awardsItem: '',
+            profileItem: '',
+            workHeader: '',
+            jobPos: '',
+            jobCompany: '',
+            jobDates: '',
+            projName: '',
+            bullet: ''
           }
+        };
+
+        let i = 0;
+        let job = null;
+        let proj = null;
+
+        /**
+         * Set font size in fonts cache (only if not already set)
+         */
+        function setFontOnce(key, size) {
+          if (size && !d.fonts[key]) {
+            d.fonts[key] = size;
+          }
+        }
+
+        /**
+         * Flush current project into job if job exists
+         */
+        function flushProj() {
+          if (proj && job) {
+            job.projects.push(proj);
+            proj = null;
+          }
+        }
+
+        /**
+         * Flush current job into jobs list
+         */
+        function flushJob() {
+          flushProj();
+          if (job) {
+            d.jobs.push(job);
+            job = null;
+          }
+        }
+
+        // Parse markdown line by line
+        while (i < lines.length) {
+          const t = lines[i].trim();
+
+          // Level 1 heading: Name
+          if (t.startsWith('# ')) {
+            d.name = extractVal(t.slice(2));
+            setFontOnce('name', extractFont(t.slice(2)));
+          }
+          // Level 2 heading: Sections
+          else if (t.startsWith('## ')) {
+            const inner = t.slice(3);
+            const lbl = inner.split(' : ')[0].toLowerCase();
+            const hdr = extractVal(inner);
+            const hdrSize = extractFont(inner);
+
+            // CONTACT section
+            if (lbl.includes('contact')) {
+              d.contactHeader = hdr;
+              i++;
+              setFontOnce('pill', hdrSize);
+
+              while (i < lines.length) {
+                const kv = lines[i].trim();
+                if (kv.startsWith('#')) break; // next section — stop
+                if (!kv) {
+                  i++;
+                  continue; // blank line — skip, keep reading
+                }
+                if (!kv.startsWith('- ')) {
+                  const key = kv.split(' : ')[0].trim().toUpperCase();
+                  const val = extractVal(kv);
+                  const fz = extractFont(kv);
+
+                  if (key === 'PHONE_NUMBER') d.phone = val;
+                  else if (key === 'EMAIL') d.email = val;
+                  else if (key === 'KAGGLE') d.kaggle = val;
+                  else if (key === 'ADDRESS_LINE_1') d.addr1 = val;
+                  else if (key === 'ADDRESS_LINE_2') d.addr2 = val;
+
+                  setFontOnce('contactItem', fz);
+                }
+                i++;
+              }
+              continue;
+            }
+            // AWARDS section
+            else if (lbl.includes('award')) {
+              d.awardsHeader = hdr;
+              i++;
+              setFontOnce('pill', hdrSize);
+
+              while (i < lines.length) {
+                const al = lines[i].trim();
+                if (al.startsWith('#')) break; // next section — stop
+                if (!al) {
+                  i++;
+                  continue; // blank line — skip
+                }
+                if (al.startsWith('- ')) {
+                  d.awards.push(extractVal(al.slice(2)));
+                  setFontOnce('awardsItem', extractFont(al.slice(2)));
+                }
+                i++;
+              }
+              continue;
+            }
+            // PROFILE section
+            else if (lbl.includes('profile')) {
+              i++;
+              while (i < lines.length) {
+                const pl = lines[i].trim();
+                if (pl.startsWith('#')) break; // next section — stop
+                if (!pl) {
+                  i++;
+                  continue; // blank line — skip
+                }
+                if (pl.startsWith('- ')) {
+                  d.profile.push(extractVal(pl.slice(2)));
+                  setFontOnce('profileItem', extractFont(pl.slice(2)));
+                }
+                i++;
+              }
+              continue;
+            }
+            // WORK section header
+            else if (lbl.includes('work')) {
+              d.workHeader = hdr;
+              setFontOnce('workHeader', hdrSize);
+            }
+          }
+          // Level 3 heading: Job entry (Position | Company | Dates)
+          else if (t.startsWith('### ')) {
+            flushJob();
+            const parts = t.slice(4).split(' | ');
+            job = {
+              position: extractVal(parts[0] || ''),
+              company: parts[1] ? extractVal(parts[1]) : '',
+              dates: parts[2] ? extractVal(parts[2]) : '',
+              projects: []
+            };
+            setFontOnce('jobPos', parts[0] ? extractFont(parts[0]) : '');
+            setFontOnce('jobCompany', parts[1] ? extractFont(parts[1]) : '');
+            setFontOnce('jobDates', parts[2] ? extractFont(parts[2]) : '');
+          }
+          // Level 4 heading: Project name
+          else if (t.startsWith('#### ')) {
+            flushProj();
+            proj = { name: extractVal(t.slice(5)), items: [] };
+            setFontOnce('projName', extractFont(t.slice(5)));
+          }
+          // Bullet point: Project item
+          else if (t.startsWith('- ') && proj) {
+            proj.items.push(extractVal(t.slice(2)));
+            setFontOnce('bullet', extractFont(t.slice(2)));
+          }
+
           i++;
         }
-        continue;
+
+        flushJob();
+        return d;
       }
-      else if (lbl.includes('award')) {
-        d.awardsHeader = hdr; i++;
-        setFontOnce('pill', hdrSize);
-        while (i < lines.length) {
-          const al = lines[i].trim();
-          if (al.startsWith('#')) break;   // next section — stop
-          if (!al) { i++; continue; }      // blank line — skip
-          if (al.startsWith('- ')) {
-            d.awards.push(extractVal(al.slice(2)));
-            setFontOnce('awardsItem', extractFont(al.slice(2)));
+
+      // ========================================================================
+      // RENDERING
+      // ========================================================================
+
+      /**
+       * HTML escape utility
+       */
+      function esc(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      /**
+       * Set text content of element by ID
+       */
+      function setText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text || '';
+      }
+
+      /**
+       * Show/hide element by ID
+       */
+      function setDisplay(id, show) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = show ? '' : 'none';
+      }
+
+      /**
+       * Apply font size CSS variables from parsed data
+       */
+      function applyFontVars(fonts) {
+        const resume = document.getElementById('resume');
+        if (!resume || !fonts) return;
+
+        const varMap = {
+          name: '--fs-name',
+          pill: '--fs-pill',
+          contactItem: '--fs-contact-item',
+          awardsItem: '--fs-awards-item',
+          profileItem: '--fs-profile-item',
+          workHeader: '--fs-work-header',
+          jobPos: '--fs-job-pos',
+          jobCompany: '--fs-job-company',
+          jobDates: '--fs-job-dates',
+          projName: '--fs-proj-name',
+          bullet: '--fs-bullet'
+        };
+
+        Object.keys(varMap).forEach((key) => {
+          if (fonts[key]) {
+            resume.style.setProperty(varMap[key], fonts[key]);
           }
-          i++;
-        }
-        continue;
-      }
-      else if (lbl.includes('profile')) {
-        i++;
-        while (i < lines.length) {
-          const pl = lines[i].trim();
-          if (pl.startsWith('#')) break;   // next section — stop
-          if (!pl) { i++; continue; }      // blank line — skip
-          if (pl.startsWith('- ')) {
-            d.profile.push(extractVal(pl.slice(2)));
-            setFontOnce('profileItem', extractFont(pl.slice(2)));
-          }
-          i++;
-        }
-        continue;
-      }
-      else if (lbl.includes('work')) {
-        d.workHeader = hdr;
-        setFontOnce('workHeader', hdrSize);
-      }
-    }
-    else if (t.startsWith('### ')) {
-      flushJob();
-      const parts = t.slice(4).split(' | ');
-      job = {
-        position: extractVal(parts[0] || ''),
-        company:  parts[1] ? extractVal(parts[1]) : '',
-        dates:    parts[2] ? extractVal(parts[2]) : '',
-        projects: []
-      };
-      setFontOnce('jobPos', parts[0] ? extractFont(parts[0]) : '');
-      setFontOnce('jobCompany', parts[1] ? extractFont(parts[1]) : '');
-      setFontOnce('jobDates', parts[2] ? extractFont(parts[2]) : '');
-    }
-    else if (t.startsWith('#### ')) {
-      flushProj();
-      proj = { name: extractVal(t.slice(5)), items: [] };
-      setFontOnce('projName', extractFont(t.slice(5)));
-    }
-    else if (t.startsWith('- ') && proj) {
-      proj.items.push(extractVal(t.slice(2)));
-      setFontOnce('bullet', extractFont(t.slice(2)));
-    }
-    i++;
-  }
-  flushJob();
-  return d;
-}
-
-// ── Renderer (updates DOM from parsed MD) ─────────────────────────────
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text || '';
-}
-function setDisplay(id, show) {
-  const el = document.getElementById(id);
-  if (el) el.style.display = show ? '' : 'none';
-}
-
-function applyFontVars(fonts) {
-  const resume = document.getElementById('resume');
-  if (!resume || !fonts) return;
-
-  const varMap = {
-    name: '--fs-name',
-    pill: '--fs-pill',
-    contactItem: '--fs-contact-item',
-    awardsItem: '--fs-awards-item',
-    profileItem: '--fs-profile-item',
-    workHeader: '--fs-work-header',
-    jobPos: '--fs-job-pos',
-    jobCompany: '--fs-job-company',
-    jobDates: '--fs-job-dates',
-    projName: '--fs-proj-name',
-    bullet: '--fs-bullet'
-  };
-
-  Object.keys(varMap).forEach(key => {
-    if (fonts[key]) resume.style.setProperty(varMap[key], fonts[key]);
-  });
-}
-
-function render(md) {
-  const d = parseMD(md);
-  applyFontVars(d.fonts);
-
-  // Name
-  setText('r-name', d.name);
-
-  // Contact
-  setText('sb-contact-pill', d.contactHeader || 'CONTACT_ME');
-  setText('f-phone',  d.phone);   setDisplay('crow-phone',  !!d.phone);
-  setText('f-email',  d.email);   setDisplay('crow-email',  !!d.email);
-  setText('f-kaggle', d.kaggle);  setDisplay('crow-kaggle', !!d.kaggle);
-  setText('f-addr1',  d.addr1);
-  setText('f-addr2',  d.addr2);
-  setDisplay('crow-addr', !!(d.addr1 || d.addr2));
-
-  // Awards
-  setText('sb-awards-pill', d.awardsHeader || 'AWARDS');
-  document.getElementById('sb-awards').innerHTML =
-    d.awards.filter(Boolean).map(a =>
-      `<div class="arow"><div class="adot"></div><div class="award-text">${esc(a)}</div></div>`
-    ).join('');
-
-  // Profile
-  document.getElementById('profile').innerHTML =
-    d.profile.filter(Boolean).map(p =>
-      `<div class="pline">${esc(p)}</div>`
-    ).join('');
-
-  // Work header
-  const wh = document.getElementById('r-work-head');
-  if (d.workHeader) { wh.textContent = d.workHeader; wh.style.display = ''; }
-  else wh.style.display = 'none';
-
-  // Jobs
-  const workEl = document.getElementById('work');
-  workEl.innerHTML = '';
-  d.jobs.forEach(job => {
-    const jobDiv = document.createElement('div');
-    jobDiv.className = 'job';
-    jobDiv.innerHTML =
-      `<div class="job-hrow">` +
-        `<div class="job-pos">${esc(job.position)}</div>` +
-        `<div class="job-right">` +
-          (job.company ? `<div class="job-company">${esc(job.company)}</div>` : '') +
-          (job.dates   ? `<div class="job-dates">${esc(job.dates)}</div>` : '') +
-        `</div>` +
-      `</div>`;
-
-    job.projects.forEach(proj => {
-      const pd = document.createElement('div');
-      pd.className = 'proj';
-      pd.innerHTML = `<div class="proj-name">${esc(proj.name)}</div>`;
-      if (proj.items.length) {
-        const ul = document.createElement('ul');
-        ul.className = 'proj-list';
-        proj.items.filter(Boolean).forEach(item => {
-          const li = document.createElement('li');
-          li.textContent = item;
-          ul.appendChild(li);
         });
-        pd.appendChild(ul);
       }
-      jobDiv.appendChild(pd);
-    });
 
-    workEl.appendChild(jobDiv);
-  });
-}
+      /**
+       * Main render function: update DOM from parsed markdown
+       */
+      function render(md) {
+        const d = parseMD(md);
+        applyFontVars(d.fonts);
 
-// ── Editor controls ───────────────────────────────────────────────────
-document.getElementById('btn-edit').addEventListener('click', () => {
-  document.getElementById('md-ta').value = currentMD;
-  document.getElementById('ed-overlay').classList.add('open');
-});
-document.getElementById('btn-cancel').addEventListener('click', () => {
-  document.getElementById('ed-overlay').classList.remove('open');
-});
-document.getElementById('btn-apply').addEventListener('click', () => {
-  currentMD = document.getElementById('md-ta').value;
-  render(currentMD);
-  document.getElementById('ed-overlay').classList.remove('open');
-});
-document.getElementById('ed-overlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
-});
+        // Name section
+        setText('r-name', d.name);
 
-// Live preview while typing
-let liveTimer;
-document.getElementById('md-ta').addEventListener('input', function () {
-  clearTimeout(liveTimer);
-  liveTimer = setTimeout(() => render(this.value), 350);
-});
+        // Contact section
+        setText('sb-contact-pill', d.contactHeader || 'CONTACT_ME');
+        setText('f-phone', d.phone);
+        setDisplay('crow-phone', !!d.phone);
+        setText('f-email', d.email);
+        setDisplay('crow-email', !!d.email);
+        setText('f-kaggle', d.kaggle);
+        setDisplay('crow-kaggle', !!d.kaggle);
+        setText('f-addr1', d.addr1);
+        setText('f-addr2', d.addr2);
+        setDisplay('crow-addr', !!(d.addr1 || d.addr2));
 
-// ── Export PNG ────────────────────────────────────────────────────────
-document.getElementById('btn-png').addEventListener('click', async () => {
-  const el = document.getElementById('resume');
-  try {
-    const canvas = await html2canvas(el, {
-      scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
-    });
-    const a = document.createElement('a');
-    a.download = 'resume.png';
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  } catch (e) { alert('PNG export failed: ' + e.message); }
-});
+        // Awards section
+        setText('sb-awards-pill', d.awardsHeader || 'AWARDS');
+        document.getElementById('sb-awards').innerHTML = d.awards
+          .filter(Boolean)
+          .map(
+            (a) =>
+              `<div class="arow"><div class="adot"></div><div class="award-text">${esc(a)}</div></div>`
+          )
+          .join('');
 
-// ── Export PDF ────────────────────────────────────────────────────────
-document.getElementById('btn-pdf').addEventListener('click', async () => {
-  const el = document.getElementById('resume');
-  try {
-    const canvas = await html2canvas(el, {
-      scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const pxW = canvas.width / 2;
-    const pxH = canvas.height / 2;
-    const mmW = 210;
-    const mmH = pxH * (mmW / pxW);
-    const pdf = new jsPDF({ unit: 'mm', format: [mmW, mmH], orientation: 'portrait' });
-    pdf.addImage(imgData, 'PNG', 0, 0, mmW, mmH);
-    pdf.save('resume.pdf');
-  } catch (e) { alert('PDF export failed: ' + e.message); }
-});
-</script>
-</body>
+        // Profile section
+        document.getElementById('profile').innerHTML = d.profile
+          .filter(Boolean)
+          .map((p) => `<div class="pline">${esc(p)}</div>`)
+          .join('');
+
+        // Work header
+        const wh = document.getElementById('r-work-head');
+        if (d.workHeader) {
+          wh.textContent = d.workHeader;
+          wh.style.display = '';
+        } else {
+          wh.style.display = 'none';
+        }
+
+        // Jobs and projects
+        const workEl = document.getElementById('work');
+        workEl.innerHTML = '';
+
+        d.jobs.forEach((job) => {
+          const jobDiv = document.createElement('div');
+          jobDiv.className = 'job';
+          jobDiv.innerHTML =
+            `<div class="job-hrow">` +
+            `<div class="job-pos">${esc(job.position)}</div>` +
+            `<div class="job-right">` +
+            (job.company ? `<div class="job-company">${esc(job.company)}</div>` : '') +
+            (job.dates ? `<div class="job-dates">${esc(job.dates)}</div>` : '') +
+            `</div>` +
+            `</div>`;
+
+          job.projects.forEach((proj) => {
+            const pd = document.createElement('div');
+            pd.className = 'proj';
+            pd.innerHTML = `<div class="proj-name">${esc(proj.name)}</div>`;
+
+            if (proj.items.length) {
+              const ul = document.createElement('ul');
+              ul.className = 'proj-list';
+
+              proj.items.filter(Boolean).forEach((item) => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                ul.appendChild(li);
+              });
+
+              pd.appendChild(ul);
+            }
+
+            jobDiv.appendChild(pd);
+          });
+
+          workEl.appendChild(jobDiv);
+        });
+      }
+
+      // ========================================================================
+      // EDITOR MODAL
+      // ========================================================================
+
+      /**
+       * Open markdown editor modal
+       */
+      document.getElementById('btn-edit').addEventListener('click', () => {
+        document.getElementById('md-ta').value = currentMD;
+        document.getElementById('ed-overlay').classList.add('open');
+      });
+
+      /**
+       * Close editor without saving
+       */
+      document.getElementById('btn-cancel').addEventListener('click', () => {
+        document.getElementById('ed-overlay').classList.remove('open');
+      });
+
+      /**
+       * Apply editor changes and close modal
+       */
+      document.getElementById('btn-apply').addEventListener('click', () => {
+        currentMD = document.getElementById('md-ta').value;
+        render(currentMD);
+        document.getElementById('ed-overlay').classList.remove('open');
+      });
+
+      /**
+       * Close modal when clicking overlay background
+       */
+      document.getElementById('ed-overlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+          e.currentTarget.classList.remove('open');
+        }
+      });
+
+      // Live preview while typing with debounce
+      let liveTimer;
+      document.getElementById('md-ta').addEventListener('input', function () {
+        clearTimeout(liveTimer);
+        liveTimer = setTimeout(() => render(this.value), 350);
+      });
+
+      // ========================================================================
+      // EXPORT: PNG
+      // ========================================================================
+
+      document.getElementById('btn-png').addEventListener('click', async () => {
+        const el = document.getElementById('resume');
+        try {
+          const canvas = await html2canvas(el, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false
+          });
+
+          const a = document.createElement('a');
+          a.download = 'resume.png';
+          a.href = canvas.toDataURL('image/png');
+          a.click();
+        } catch (e) {
+          console.error('PNG export failed:', e);
+          alert('PNG export failed: ' + e.message);
+        }
+      });
+
+      // ========================================================================
+      // EXPORT: PDF
+      // ========================================================================
+
+      document.getElementById('btn-pdf').addEventListener('click', async () => {
+        const el = document.getElementById('resume');
+        try {
+          const canvas = await html2canvas(el, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false
+          });
+
+          const imgData = canvas.toDataURL('image/png');
+          const { jsPDF } = window.jspdf;
+
+          const pxW = canvas.width / 2;
+          const pxH = canvas.height / 2;
+          const mmW = 210; // A4 width in mm
+          const mmH = (pxH * mmW) / pxW;
+
+          const pdf = new jsPDF({
+            unit: 'mm',
+            format: [mmW, mmH],
+            orientation: 'portrait'
+          });
+
+          pdf.addImage(imgData, 'PNG', 0, 0, mmW, mmH);
+          pdf.save('resume.pdf');
+        } catch (e) {
+          console.error('PDF export failed:', e);
+          alert('PDF export failed: ' + e.message);
+        }
+      });
+    </script>
+  </body>
 </html>

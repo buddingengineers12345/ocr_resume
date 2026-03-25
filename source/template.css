@@ -217,134 +217,160 @@ body {
   box-shadow: 0 6px 50px rgba(0, 0, 0, 0.35);
 }
 
-/* ══════════════════════════════════════
+/* ============================================================================
    SIDEBAR
-══════════════════════════════════════ */
+   ========================================================================== */
 #sidebar {
-  width: var(--sidebar-w);
-  min-width: var(--sidebar-w);
-  background: var(--sidebar-bg);
-  color: var(--sidebar-text);
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  color: var(--sidebar-text);
   padding-bottom: 50px;
 }
 
-/* — Photo — */
+/* Photo section */
 .photo-wrap {
   width: 100%;
   display: flex;
   justify-content: center; padding: 44px 0px 90px 0px;
 }
+
 .photo-circle {
   width: 300px;
   height: 300px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, #d8d8d8, #a0a0a0);
   overflow: hidden;
-  flex-shrink: 0;
 }
-.photo-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* — Pill headers — */
+.photo-circle img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Pill headers (section titles in sidebar) */
 .pill {
-  background: #ffffff;
+  width: 303px;
+  margin-bottom: 32px;
+  padding: 10px 0;
+  background: #fff;
   border: 2px solid #e0e0e0;
   border-radius: 40px;
-  padding: 10px 0;
-  width: 303px;
-  text-align: center;
   font-size: var(--fs-pill);
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #373536;
-  margin-bottom: 32px;
+  text-align: center;
+  color: var(--main-text);
 }
 
-/* — Contact rows — */
+/* Contact section */
 #sb-contact {
-  width: 100%; padding: 0px 30px 0px 126px;
-  margin-bottom: 55px;
+  width: 100%;
+  margin-bottom: 55px; padding: 0px 30px 0px 126px;
 }
+
 .crow {
   display: flex;
-  align-items: flex-start; margin-bottom: 21px;
-  color: var(--sidebar-text);
+  align-items: flex-start;
+  margin-bottom: 21px;
   font-size: var(--fs-contact-item);
   line-height: 1.5;
+  color: var(--sidebar-text);
 }
+
 .cicon {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
   margin-top: 1px;
   margin-right: 14px;
-}
-.cicon svg { width: 23px; height: 23px; fill: #e2e1e2; }
-.ctext { flex: 1; word-break: break-word; }
-
-/* — Awards — */
-#sb-awards {
-  width: 260px; padding: 0px 0px 0px 0px;
-  margin-left: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.arow {
-  display: flex;
-  align-items: flex-start; margin-bottom: 19px;
-  color: var(--sidebar-text);
-  font-size: var(--fs-awards-item);
-  line-height: 1.5;
-  width: 100%;
-  max-width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-}
-.award-text { text-align: left; }
-.adot {
-  width: 11px;
-  min-width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #e2e1e2;
-  margin-top: 7px;
-  margin-right: 20px;
   flex-shrink: 0;
 }
 
-/* ══════════════════════════════════════
-   MAIN CONTENT
-══════════════════════════════════════ */
-#main {
-  flex: 1; padding: 40px 131px 72px 74px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.cicon svg {
+  width: 23px;
+  height: 23px;
+  fill: var(--sidebar-text);
 }
 
-/* Name */
+.ctext {
+  flex: 1;
+  word-break: break-word;
+}
+
+/* Awards section */
+#sb-awards {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 260px; padding: 0px 0px 0px 0px;
+  margin-left: 0;
+}
+
+.arow {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 19px;
+  font-size: var(--fs-awards-item);
+  line-height: 1.5;
+  color: var(--sidebar-text);
+}
+
+.adot {
+  width: 11px;
+  height: 11px;
+  min-width: 11px;
+  flex-shrink: 0;
+  margin-top: 7px;
+  margin-right: 20px;
+  border-radius: 50%;
+  background: var(--sidebar-text);
+}
+
+.award-text {
+  text-align: left;
+}
+
+/* ============================================================================
+   MAIN CONTENT AREA
+   ========================================================================== */
+#main {
+  flex: 1;
+  min-width: 0; padding: 40px 131px 72px 74px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Name section */
 #r-name {
-  font-family: 'Helvetica World', sans-serif;
   font-size: var(--fs-name);
   font-weight: 400;
+  line-height: 1;
+  margin-bottom: 19px;
   color: #111;
-  line-height: 1; margin-bottom: 19.0px;
   letter-spacing: -0.5px;
 }
 
-/* Profile */
-#profile { margin-bottom: 40px; }
+/* Profile section */
+#profile {
+  margin-bottom: 40px;
+}
+
 .pline {
   font-size: var(--fs-profile-item);
-  color: #3b3b3b;
   line-height: 1.7;
+  color: #3b3b3b;
 }
 
 /* Section header */
@@ -353,37 +379,45 @@ body {
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #373536;
-  border-bottom: 3px solid #373536;
+  color: var(--main-text);
+  border-bottom: 3px solid var(--main-text);
   padding-bottom: 7px;
   margin-bottom: 32px;
 }
 
-/* Job entry */
-.job { margin-bottom: 52.0px; }
+/* Job entry (position) */
+.job {
+  margin-bottom: 52px;
+}
 
-/* Position header row */
+/* Position header row (title, company, dates) */
 .job-hrow {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   margin-bottom: 9px;
 }
+
 .job-pos {
-  font-family: 'Helvetica World', sans-serif;
   font-size: var(--fs-job-pos);
   font-weight: 700;
   color: #111;
 }
-.job-right { display: flex; align-items: baseline; }
+
+.job-right {
+  display: flex;
+  align-items: baseline;
+}
+
 .job-company {
   font-size: var(--fs-job-company);
   font-weight: 700;
   letter-spacing: 4px;
-  color: #373536;
+  color: var(--main-text);
   white-space: nowrap;
   margin-right: 20px;
 }
+
 .job-dates {
   font-size: var(--fs-job-dates);
   font-weight: 300;
@@ -391,28 +425,50 @@ body {
   white-space: nowrap;
 }
 
-/* Project */
-.proj { margin-bottom: 22px; }
+/* Project within a job */
+.proj {
+  margin-bottom: 22px;
+}
+
 .proj-name {
   font-size: var(--fs-proj-name);
   font-weight: 400;
-  color: #373536; margin-bottom: 5.0px;
-}
-.proj-list {
-  list-style: disc;
-  padding-left: 23px;
-  margin: 0;
-}
-.proj-list li {
-  font-size: var(--fs-bullet);
-  color: #3b3b3b;
-  line-height: 1.6; margin-bottom: 1px;
+  margin-bottom: 5px;
+  color: var(--main-text);
 }
 
-/* ── Print ── */
+.proj-list {
+  list-style: disc;
+  margin: 0;
+  padding-left: 23px;
+}
+
+.proj-list li {
+  font-size: var(--fs-bullet);
+  line-height: 1.6;
+  margin-bottom: 1px;
+  color: #3b3b3b;
+}
+
+/* ============================================================================
+   PRINT MEDIA QUERY
+   ========================================================================== */
 @media print {
-  body { background: white; }
-  #toolbar, #ed-overlay { display: none !important; }
-  #pw { padding: 0; }
-  #resume { box-shadow: none; width: 100%; }
+  body {
+    background: white;
+  }
+
+  #toolbar,
+  #ed-overlay {
+    display: none !important;
+  }
+
+  #pw {
+    padding: 0;
+  }
+
+  #resume {
+    width: 100%;
+    box-shadow: none;
+  }
 }

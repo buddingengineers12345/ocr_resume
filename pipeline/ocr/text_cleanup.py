@@ -153,15 +153,17 @@ def estimate_background_color(
 
 
 def main() -> None:
-    """Load image and CSV, fill text regions with background color, save cleaned image.
+    """Erase detected text regions by filling with background color.
     
-    **Execution:**
-    1. Find input image and validate objects.csv exists
-    2. Load all text objects from CSV
-    3. Make a copy of the original image for in-place modification
-    4. For each text object, estimate background and fill with cv2.rectangle()
-    5. Save filled image as text_cleaned.png in output directory
-    6. Print summary statistics (image size, number of regions cleaned)
+    Loads image and objects.csv, estimates background color for each text
+    region, fills those regions with the estimated color, and saves the
+    cleaned image as text_cleaned.png.
+    
+    **Steps:**
+    1. Find input image and load objects.csv
+    2. For each text object: estimate background color and fill region
+    3. Save cleaned image as text_cleaned.png
+    4. Print summary statistics
     """
     image_path = find_image()
     output_csv = get_output_csv(image_path)

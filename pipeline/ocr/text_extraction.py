@@ -47,6 +47,9 @@ import numpy as np
 import pytesseract
 from PIL import Image
 
+# Set pytesseract path explicitly to avoid hang on macOS
+pytesseract.pytesseract.pytesseract_cmd = '/usr/local/bin/tesseract'
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from utils import (

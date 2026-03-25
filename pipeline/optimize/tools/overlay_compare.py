@@ -1,8 +1,32 @@
 """overlay_compare — simple visual overlay and diff utilities.
 
-Provides convenience functions to blend, side-by-side and produce a
-difference heatmap between the reference and rendered images. Intended as a
-developer utility to visualise alignment and layout changes.
+**Purpose:**
+Provides convenience functions to create visual comparisons between reference
+and rendered images. Intended as developer utilities for quick visual inspection
+of alignment and layout changes during optimization.
+
+**Functions:**
+
+- **blend_overlay():** Alpha-blend rendered on top of original image
+  - alpha=0.5 → 50% mix  
+  - alpha=0.3 → mostly original with hint of rendered
+
+- **side_by_side():** Juxtapose original and rendered at matching height
+  - Optional labels ("ORIGINAL", "RENDERED")
+  - Gray gap separator for clarity
+
+- **diff_heatmap():** Pixel-level difference visualization
+  - Red = large pixel differences
+  - Dark/black = close matches
+  - Useful for spotting layout shifts and rendering artifacts
+
+**Outputs:**
+- Blended png: blend_overlay.png
+- Side-by-side: side_by_side.png
+- Heatmap: diff_heatmap.png (in current output directory)
+
+**Usage:**
+    python pipeline/optimize/tools/overlay_compare.py
 """
 
 from pathlib import Path
@@ -23,26 +47,65 @@ LABEL_IMAGES = True  # draw labels on side-by-side output
 
 
 def load_as_rgb(path):
-    """Open any image and convert to RGB."""
+    """Open any image format and convert to RGB color space.
+    
+    Args:
+        path: Image file path (str or Path)
+        
+    Returns:
+        PIL.Image: RGB image
+    """
     return Image.open(path).convert("RGB")
 
 
 def resize_to_match(img, reference):
-    """Resize img to the same dimensions as reference using high-quality resampling."""
+    """Resize img to the same dimensions as reference using high-quality resampling.
+    
+    Args:
+        img: PIL.Image to resize
+        reference: PIL.Image reference for target dimensions
+        
+    Returns:
+        PIL.Image: Resized image matching reference dimensions
+    """
     return img.resize(reference.size, Image.LANCZOS)
 
 
 def blend_overlay(original, rendered, alpha=0.5):
-    """
-    Alpha-blend rendered on top of original.
-    alpha=0.5 → equal mix; alpha=0.3 → mostly original.
+    """Alpha-blend rendered on top of original (PIL.Image.blend semantics).
+    
+    **Effect:**
+    - alpha=0.0 → completely original
+    - alpha=0.5 → equal mix (50/50)
+    - alpha=1.0 → completely rendered
+    
+    Args:
+        original: PIL.Image reference
+        rendered: PIL.Image output
+        alpha: Blend factor (0.0 to 1.0)
+        
+    Returns:
+        PIL.Image: Blended image at original dimensions
     """
     rendered_r = resize_to_match(rendered, original)
     return Image.blend(original, rendered_r, alpha=alpha)
 
 
 def side_by_side(original, rendered, gap=20, label=True):
-    """Place original and rendered next to each other at the same height."""
+    """Place original and rendered images side-by-side at matching height.
+    
+    Resizes rendered image to match original height, then tiles horizontally
+    with optional gray gap separator and labels.
+    
+    Args:
+        original: PIL.Image reference
+        rendered: PIL.Image output (will be aspect-ratio-preserved resized)
+        gap: Pixel width of separator between images (default 20)
+        label: If True, draw "ORIGINAL" and "RENDERED" labels
+        
+    Returns:
+        PIL.Image: Combined side-by-side image
+    """
     # Match height
     h = original.height
     rendered_r = rendered.resize(
@@ -74,9 +137,24 @@ def side_by_side(original, rendered, gap=20, label=True):
 
 
 def diff_heatmap(original, rendered):
-    """
-    Compute per-pixel absolute difference and render as a heatmap.
-    Bright red = large difference, dark = close match.
+    """Compute per-pixel absolute difference and render as a heatmap.
+    
+    **Visualization:**
+    - Bright red: Large pixel-level differences (misalignment/changes)
+    - Dark/black: Close matches (no difference)
+    - Green tints: Intermediate differences
+    
+    **Use cases:**
+    - Spot layout shifts (localized misalignment regions)
+    - Identify rendering artifacts
+    - Compare before/after optimization
+    
+    Args:
+        original: PIL.Image reference
+        rendered: PIL.Image output
+        
+    Returns:
+        PIL.Image: Heatmap visualization at original dimensions
     """
     rendered_r = resize_to_match(rendered, original)
 

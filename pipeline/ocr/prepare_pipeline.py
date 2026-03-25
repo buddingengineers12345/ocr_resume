@@ -41,17 +41,20 @@ from utils import (
 
 
 def prepare() -> None:
-    """Validate prerequisites and initialize OCR output directories and CSV.
+    """Validate input files and initialize OCR output directory structure.
     
-    **Execution flow:**
-    1. Find input image (via find_image() — checks IMAGE_PATH env var, then defaults)
-    2. Find content.txt in temp/ (validates it exists from extract_values.py)
-    3. Ensure output directory exists: generated/ocr/{image_stem}/
-    4. Write empty objects.csv with CSV_FIELDNAMES header row
-    5. Print initialization summary
+    Checks that input image and content.txt exist, creates output directory
+    (generated/ocr/{image_stem}/), and initializes an empty objects.csv file.
+    
+    **Steps:**
+    1. Find input image via find_image()
+    2. Verify content.txt exists in generated/temp/
+    3. Create output directory with mkdir(parents=True)
+    4. Write objects.csv with header row (no data yet)
+    5. Print summary
     
     **Raises:**
-    - FileNotFoundError if image or content.txt not found
+        FileNotFoundError: If input image or content.txt not found
     """
     image_path = find_image()
     content_path = get_content_path()

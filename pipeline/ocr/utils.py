@@ -317,18 +317,29 @@ def read_csv_objects(csv_path: Path) -> list[dict]:
     objects = []
     with open(csv_path, encoding="utf-8", newline="") as fh:
         for row in csv.DictReader(fh):
-            objects.append(
-                {
-                    "object_type": row["object_type"],
-                    "text": row["text"],
-                    "x": int(row["x"]),
-                    "y": int(row["y"]),
-                    "w": int(row["width"]),
-                    "h": int(row["height"]),
-                    "color": row.get("color", ""),
-                    "bg_color": row.get("bg_color", ""),
-                }
-            )
+            # Handle empty coordinate values (for undetected text entries)
+            try:
+                x_val = int(row["x"]) if row["x"].strip() else None
+                y_val = int(row["y"]) if row["y"].strip() else None
+                w_val = int(row["width"]) if row["width"].strip() else None
+                h_val = int(row["height"]) if row["height"].strip() else None
+            except (ValueError, KeyError):
+                continue  # Skip malformed rows
+            
+            # Only add rows with valid coordinates
+            if x_val is not None and y_val is not None and w_val is not None and h_val is not None:
+                objects.append(
+                    {
+                        "object_type": row["object_type"],
+                        "text": row["text"],
+                        "x": x_val,
+                        "y": y_val,
+                        "w": w_val,
+                        "h": h_val,
+                        "color": row.get("color", ""),
+                        "bg_color": row.get("bg_color", ""),
+                    }
+                )
     return objects
 
 
