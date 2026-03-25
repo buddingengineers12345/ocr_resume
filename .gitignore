@@ -157,3 +157,5 @@ temp/
 image_reference/*.png
 output/
 temp/
+generated/
+checkpoints/

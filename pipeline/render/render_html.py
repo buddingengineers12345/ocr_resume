@@ -37,9 +37,9 @@ from pathlib import Path
 from PIL import Image
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
-# ── Paths (workspace root = 3 levels up from this script) ─────────────────
+# ── Paths (workspace root = 2 levels up from this script) ─────────────────
 SCRIPT_DIR = Path(__file__).parent.resolve()
-WORKSPACE  = SCRIPT_DIR.parent.parent.parent
+WORKSPACE  = SCRIPT_DIR.parent.parent
 
 DEFAULT_TEMPLATE     = WORKSPACE / "source"        / "template.html"
 DEFAULT_CSS_TEMPLATE = WORKSPACE / "source"        / "template.css"

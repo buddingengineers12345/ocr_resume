@@ -2,13 +2,13 @@
 """
 extract_values.py
 =================
-Parses html_info/content.md and writes all label values to temp/content.txt.
+Parses source/content.md and writes all label values to generated/temp/content.txt.
 
 Handles piped formats and ignores section headers (# lines) and list
 markers (- lines).
 
 Usage:
-  python html_pipeline/extract_values.py   # from workspace root
+  python pipeline/extract/extract_values.py   # from workspace root
 """
 
 from collections import Counter
@@ -16,10 +16,10 @@ from pathlib import Path
 
 
 def extract_values_from_md() -> None:
-    """Read content.md, extract colon-separated values, write to temp/content.txt."""
-    workspace_root = Path(__file__).parent.parent.resolve()
-    content_md_path = workspace_root / "html_info" / "content.md"
-    temp_dir = workspace_root / "temp"
+    """Read content.md, extract colon-separated values, write to generated/temp/content.txt."""
+    workspace_root = Path(__file__).parent.parent.parent.resolve()
+    content_md_path = workspace_root / "source" / "content.md"
+    temp_dir = workspace_root / "generated" / "temp"
     content_txt_path = temp_dir / "content.txt"
 
     temp_dir.mkdir(parents=True, exist_ok=True)

@@ -120,12 +120,29 @@ Uses signed metrics to pick delta direction; accepts improvement only if
 
 ---
 
-## Pipeline per Iteration
+## Running the Pipeline
+
+### Quick Start
+```bash
+# Run entire pipeline end-to-end (all 4 stages)
+./pipeline.sh full
+
+# Or run individual stages
+./pipeline.sh extract    # Stage 1: Extract fields
+./pipeline.sh render     # Stage 2: Render HTML → PNG
+./pipeline.sh ocr        # Stage 3: OCR & object detection
+./pipeline.sh optimize   # Stage 4: CSS optimization
+
+# Dry-run (see what would execute)
+./pipeline.sh dry-run full
+```
+
+### Optimization Loop per Iteration
 
 ```
 1. css_manager.apply_patch(selector, prop, new_val)
-2. python pipeline/render/render_html.py              → updates Output_1.png
-3. IMAGE_PATH=.../Output_1.png ./pipeline/run.sh     → updates generated/ocr/Output_1/objects.csv
+2. ./pipeline.sh render                             → updates Output_1.png
+3. ./pipeline.sh ocr                                → updates generated/ocr/Output_1/objects.csv
 4. alignment_metric.compute() → composite score
 5. If improved: keep; else: css_manager.restore(snapshot)
 ```
@@ -147,11 +164,61 @@ Page_1.png / generated/ocr/Page_1/objects.csv are **never re-processed** during 
 
 ---
 
-## Expected output
+## Expected Output
+
+### Full Pipeline Run
+```bash
+$ ./pipeline.sh full
+
+╔════════════════════════════════════════════╗
+║  Resume OCR Complete Pipeline              ║
+╚════════════════════════════════════════════╝
+
+[2026-03-25 12:36:30] Python: python3 (Python 3.10.13)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▶ STAGE 1: Extract Resume Fields
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[2026-03-25 12:36:31] Extracting fields from source/content.md …
+✓ Extracted 64 fields to generated/temp/content.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▶ STAGE 2: Render HTML to PNG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[2026-03-25 12:36:32] Rendering template.html → Output_1.png (1414×2000 px) …
+✓ Rendered image saved (1.5 MB)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▶ STAGE 3: OCR & Object Detection
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[2026-03-25 12:36:40] Processing 2 image(s) …
+✓ OCR complete: Output_1 and Page_1 CSV data generated
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+▶ STAGE 4: CSS Alignment Optimization
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[2026-03-25 12:36:42] Running alignment optimizer …
+[BASE]  composite= 93.1%  align= 96.8%  ssim=0.8452  excess=  1.8 px
+✓ Final alignment score: 93.1%
+
+╔════════════════════════════════════════════╗
+║  ✓ Pipeline Complete                      ║
+╚════════════════════════════════════════════╝
+
+✓ Mode: full
+✓ Duration: 72s
+✓ Logs: ./generated/temp/pipeline.log
+```
+
+### Optimization Phase Output
 ```
 [WARM START] composite=77.4%  (align=74.4%, ssim=81.0%)
 [DRIFT FIX]  composite=83.1%  (align=80.3%, ssim=85.0%)
 [ITER  1]    composite=86.0%  ...
 [ITER  7]    composite=91.2%  ← STOP (≥ 90%)
-CSS written to html_info/template.css
+CSS written to source/template.css
 ```

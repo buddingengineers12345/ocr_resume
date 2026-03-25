@@ -172,8 +172,8 @@ body {
 
 /* — Pill headers — */
 .pill {
-  background: #3a3a3a;
-  border: 2px solid #555;
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
   border-radius: 40px;
   padding: 10px 0;
   width: 303px;
@@ -182,7 +182,7 @@ body {
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #fff;
+  color: #373536;
   margin-bottom: 32px;
 }
 
