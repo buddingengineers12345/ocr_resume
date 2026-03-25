@@ -1,22 +1,23 @@
 @font-face {
-  font-family: 'TGBonum';
+  font-family: 'Helvetica World';
   src: url('./fonts/TGBonum-400.otf') format('opentype');
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 @font-face {
-  font-family: 'TGBonum';
-  src: url('./fonts/TGBonum-400.otf') format('opentype');
-  font-weight: 700;
-}
-@font-face {
-  font-family: 'TGHeros';
-  src: url('./fonts/TGHeros-700.otf') format('opentype');
-  font-weight: 400;
-}
-@font-face {
-  font-family: 'TGHeros';
+  font-family: 'Helvetica World';
   src: url('./fonts/TGHeros-400.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Helvetica World';
+  src: url('./fonts/TGHeros-700.otf') format('opentype');
   font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,7 +32,7 @@
 }
 
 body {
-  font-family: 'Helvetica World', 'Source Sans 3', Arial, sans-serif;
+  font-family: 'Helvetica World', sans-serif;
   background: #aaaaaa;
   min-height: 100vh;
   display: flex;
@@ -113,7 +114,7 @@ body {
   background: #1a1a1a; color: #c0c0c0;
   border: none; outline: none;
   padding: 18px 22px;
-  font-family: 'Courier New', monospace;
+  font-family: 'Helvetica World', sans-serif;
   font-size: 12.5px; line-height: 1.8;
   resize: none; overflow-y: auto;
   min-height: 200px;
@@ -213,8 +214,7 @@ body {
 
 /* — Awards — */
 #sb-awards {
-  width: 303px;
-  padding: 0;
+  width: 303px; padding: 0px 0px 0px 0px;
   margin-left: 0;
   display: flex;
   flex-direction: column;
@@ -247,7 +247,7 @@ body {
    MAIN CONTENT
 ══════════════════════════════════════ */
 #main {
-  flex: 1; padding: 40px 131px 72px 66px;
+  flex: 1; padding: 40px 131px 72px 72px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -255,7 +255,7 @@ body {
 
 /* Name */
 #r-name {
-  font-family: 'Helvetica World', 'EB Garamond', Georgia, serif;
+  font-family: 'Helvetica World', sans-serif;
   font-size: 96px;
   font-weight: 400;
   color: #111;
@@ -295,7 +295,7 @@ body {
   margin-bottom: 9px;
 }
 .job-pos {
-  font-family: 'Helvetica World', 'EB Garamond', Georgia, serif;
+  font-family: 'Helvetica World', sans-serif;
   font-size: 24px;
   font-weight: 700;
   color: #111;
