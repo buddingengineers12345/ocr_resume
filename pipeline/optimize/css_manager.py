@@ -218,16 +218,21 @@ class CSSManager:
         return float(m.group(0)) if m else None
 
     def set_value(self, selector: str, prop: str, new_value) -> bool:
-        """
-        Set *prop* inside *selector* to *new_value*.
-        *new_value* can be a number (auto-units inferred) or a string.
-        Returns True on success.
-
-        Infers units:
-          - str  → used verbatim
-          - int  → appended 'px'  (for most dimension properties)
-          - float with abs < 10 → unitless (for line-height etc.)
-          - float with abs ≥ 10 → appended 'px'
+        """Set a CSS property value with automatic unit inference.
+        
+        Converts numeric or string values to CSS value strings:
+        - str → used verbatim
+        - int → appended 'px' (for dimensions)
+        - float with abs < 10 → unitless (for line-height, etc.)
+        - float with abs ≥ 10 → appended 'px'
+        
+        Args:
+            selector: CSS selector (e.g., '#main')
+            prop: Property name (e.g., 'padding-top')
+            new_value: New value (str, int, or float)
+            
+        Returns:
+            bool: True if property was set, False if selector not found
         """
         new_value_str = _format_value(prop, new_value)
 

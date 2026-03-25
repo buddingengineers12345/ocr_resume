@@ -255,6 +255,19 @@ WARM_START_PATCHES = [
 ]
 
 def phase0_warm_start(mgr: CSSManager, dry_run: bool = False) -> dict:
+    """Apply pre-computed CSS fixes based on baseline alignment analysis.
+    
+    Uses WARM_START_PATCHES (defined earlier in script) to make targeted
+    CSS adjustments that typically provide rapid improvement without iterative
+    rendering. Renders once and returns updated metric dict.
+    
+    Args:
+        mgr: CSSManager instance for atomic CSS modifications
+        dry_run: If True, compute metrics without persisting CSS changes
+        
+    Returns:
+        dict: Updated metrics after warm-start patches applied
+    """
     print("\n" + "="*60)
     print("PHASE 0 — Analytical Warm Start")
     print("="*60)
@@ -299,6 +312,20 @@ DRIFT_PATCHES = [
 
 def phase1_drift_correction(mgr: CSSManager, baseline: dict,
                              dry_run: bool = False) -> dict:
+    """Apply targeted fixes for systematic vertical/horizontal drift.
+    
+    Uses DRIFT_PATCHES (predefined CSS adjustments) to correct persistent
+    misalignment patterns observed after warm-start. Renders once per patch,
+    iterating until target alignment reached or all patches exhausted.
+    
+    Args:
+        mgr: CSSManager instance for CSS modifications and rollback
+        baseline: Metric dict (used to detect early target achievement)
+        dry_run: If True, compute metrics without persisting changes
+        
+    Returns:
+        dict: Best metrics achieved after drift correction phase
+    """
     print("\n" + "="*60)
     print("PHASE 1 — Drift Correction")
     print("="*60)
@@ -448,6 +475,21 @@ def _direction_filter(deltas: list, m: dict, selector: str, prop: str) -> list:
 def phase2_hill_climb(mgr: CSSManager, baseline: dict,
                       dry_run: bool = False,
                       max_steps: int = MAX_ITER_HILLCLIMB) -> dict:
+    """Iteratively refine CSS via greedy hill-climbing.
+    
+    Per iteration: render current CSS → OCR output → compute metrics →
+    suggest best CSS change → accept if improves composite score by at least
+    MIN_COMPOSITE_IMPROVE. Stops when target alignment reached or plateau detected.
+    
+    Args:
+        mgr: CSSManager instance for CSS modifications and rollback
+        baseline: Starting metrics (used for comparison)
+        dry_run: If True, compute scores without persisting CSS changes
+        max_steps: Maximum iterations before stopping (default 50)
+        
+    Returns:
+        dict: Final best metrics achieved after hill-climbing
+    """
     print("\n" + "="*60)
     print("PHASE 2 — Greedy Hill-Climbing")
     print("="*60)
@@ -564,6 +606,28 @@ def phase2_hill_climb(mgr: CSSManager, baseline: dict,
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main(dry_run: bool = False, resume: bool = False, max_steps: int = MAX_ITER_HILLCLIMB) -> None:
+    """Execute multi-phase CSS optimization to improve alignment.
+    
+    Runs the full optimization pipeline: baseline scoring → warm-start phase
+    → drift correction → hill-climbing iteration until target alignment reached
+    or max iterations exceeded.
+    
+    **Phases:**
+    1. **Baseline:** Measure initial alignment score
+    2. **Warm-start:** Apply analytical CSS fixes based on deviation analysis
+    3. **Drift correction:** Address systematic vertical/horizontal drift
+    4. **Hill-climb:** Greedy iterative refinement (per-iteration: render → OCR → score)
+    
+    **Logging:**
+    - All iterations logged to generated/optimize_logs.csv
+    - CSS snapshots saved at phase transitions
+    - Visual overlays generated (unless dry_run=True)
+    
+    **Arguments:**
+    - dry_run: If True, compute scores without persisting CSS changes
+    - resume: If True, skip phases 0-1 and continue from current CSS state
+    - max_steps: Maximum hill-climbing iterations (default 50)
+    """
     t0 = time.time()
     mgr = CSSManager(CSS_PATH)
     PROGRESS_DIR.mkdir(parents=True, exist_ok=True)

@@ -389,9 +389,21 @@ def compute(
     img_o1: Path = IMG_O1,
     img_p1: Path = IMG_P1,
 ) -> dict:
-    """
-    Main entry point.  Reads CSVs and images from disk every call
-    (so re-running after each optimizer render picks up fresh data).
+    """Compute alignment and image similarity metrics between output and reference.
+    
+    Reads OCR results and images from disk, pairs text objects, calculates
+    per-object offsets, and computes summary metrics (alignment %, SSIM, etc.).
+    Fresh disk read every call enables detecting changes after re-renders.
+    
+    Args:
+        csv_o1: Path to Output_1 OCR CSV (default: generated/ocr/Output_1/objects.csv)
+        csv_p1: Path to reference OCR CSV (default: generated/ocr/Page_1/objects.csv)
+        img_o1: Path to Output_1 PNG (default: generated/Output_1.png)
+        img_p1: Path to reference PNG (default: source/references/Page_1.png)
+        
+    Returns:
+        dict: Comprehensive metrics including alignment_pct, composite score, SSIM,
+              per-region offsets, and pair-level alignment data
     """
     rows_o1 = _load_csv(csv_o1)
     rows_p1 = _load_csv(csv_p1)

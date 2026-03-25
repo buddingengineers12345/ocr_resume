@@ -278,8 +278,7 @@ body {
 
 .crow {
   display: flex;
-  align-items: flex-start;
-  margin-bottom: 21px;
+  align-items: flex-start; margin-bottom: 21px;
   font-size: var(--fs-contact-item);
   line-height: 1.5;
   color: var(--sidebar-text);
@@ -320,8 +319,7 @@ body {
 .arow {
   display: flex;
   align-items: flex-start;
-  width: 100%;
-  margin-bottom: 19px;
+  width: 100%; margin-bottom: 19px;
   font-size: var(--fs-awards-item);
   line-height: 1.5;
   color: var(--sidebar-text);
@@ -347,7 +345,7 @@ body {
    ========================================================================== */
 #main {
   flex: 1;
-  min-width: 0; padding: 40px 131px 72px 74px;
+  min-width: 0; padding: 40px 131px 72px 72px;
   display: flex;
   flex-direction: column;
 }
@@ -445,8 +443,7 @@ body {
 
 .proj-list li {
   font-size: var(--fs-bullet);
-  line-height: 1.6;
-  margin-bottom: 1px;
+  line-height: 1.6; margin-bottom: 1px;
   color: #3b3b3b;
 }
 

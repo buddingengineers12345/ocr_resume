@@ -399,6 +399,19 @@ def detect_text(image_path: Path) -> list[dict]:
 
 
 def run() -> None:
+    """Execute the text extraction OCR pipeline.
+    
+    **Steps:**
+    1. Load input image and find/create output directory
+    2. Run multi-pass Tesseract OCR to detect all text regions
+    3. Estimate foreground/background colors for each detection
+    4. Filter: keep only text matching content.txt reference
+    5. Ensure all reference words appear in CSV (with empty coords if not detected)
+    6. Write results to objects.csv, sorted by sequence
+    
+    **Input:** IMAGE_PATH env var or default image path
+    **Output:** generated/ocr/{image_stem}/objects.csv
+    """
     image_path = find_image()
     ensure_output_dir(image_path)
     output_csv = get_output_csv(image_path)

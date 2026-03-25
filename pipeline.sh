@@ -339,7 +339,7 @@ main() {
             stage_extract || return 1
             stage_render || return 1
             stage_ocr || return 1
-            stage_optimize || return 1
+            # stage_optimize || return 1
             stage_compare || return 1
             ;;
         *)
