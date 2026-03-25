@@ -253,10 +253,23 @@ async function loadContentFromFile() {
 document.addEventListener('DOMContentLoaded', loadContentFromFile);
 
 // ── MD Parser ─────────────────────────────────────────────────────────
-function extractVal(raw) {
+function parseValueAndFont(raw) {
   const idx = raw.indexOf(' : ');
   const val = idx === -1 ? raw.trim() : raw.slice(idx + 3).trim();
-  return val.replace(/\s*\(font_size\s*:\s*[0-9.]+\s*px\)\s*/i, '').trim();
+  const m = val.match(/\(font_size\s*:\s*([0-9.]+\s*px)\)\s*$/i);
+  if (!m) return { text: val.trim(), fontSize: '' };
+  return {
+    text: val.replace(/\s*\(font_size\s*:\s*[0-9.]+\s*px\)\s*$/i, '').trim(),
+    fontSize: m[1].replace(/\s+/g, '')
+  };
+}
+
+function extractVal(raw) {
+  return parseValueAndFont(raw).text;
+}
+
+function extractFont(raw) {
+  return parseValueAndFont(raw).fontSize;
 }
 
 function parseMD(md) {
@@ -265,9 +278,26 @@ function parseMD(md) {
     name: '', contactHeader: '', awardsHeader: '',
     phone: '', email: '', kaggle: '', addr1: '', addr2: '',
     awards: [], profile: [],
-    workHeader: '', jobs: []
+    workHeader: '', jobs: [],
+    fonts: {
+      name: '',
+      pill: '',
+      contactItem: '',
+      awardsItem: '',
+      profileItem: '',
+      workHeader: '',
+      jobPos: '',
+      jobCompany: '',
+      jobDates: '',
+      projName: '',
+      bullet: ''
+    }
   };
   let i = 0, job = null, proj = null;
+
+  function setFontOnce(key, size) {
+    if (size && !d.fonts[key]) d.fonts[key] = size;
+  }
 
   function flushProj() { if (proj && job) { job.projects.push(proj); proj = null; } }
   function flushJob()  { flushProj(); if (job) { d.jobs.push(job); job = null; } }
@@ -277,13 +307,16 @@ function parseMD(md) {
 
     if (t.startsWith('# ')) {
       d.name = extractVal(t.slice(2));
+      setFontOnce('name', extractFont(t.slice(2)));
     }
     else if (t.startsWith('## ')) {
       const inner = t.slice(3);
       const lbl = inner.split(' : ')[0].toLowerCase();
       const hdr = extractVal(inner);
+      const hdrSize = extractFont(inner);
       if (lbl.includes('contact')) {
         d.contactHeader = hdr; i++;
+        setFontOnce('pill', hdrSize);
         while (i < lines.length) {
           const kv = lines[i].trim();
           if (kv.startsWith('#')) break;   // next section — stop
@@ -291,11 +324,13 @@ function parseMD(md) {
           if (!kv.startsWith('- ')) {
             const key = kv.split(' : ')[0].trim().toUpperCase();
             const val = extractVal(kv);
+            const fz = extractFont(kv);
             if      (key === 'PHONE_NUMBER')  d.phone = val;
             else if (key === 'EMAIL')          d.email = val;
             else if (key === 'KAGGLE')         d.kaggle = val;
             else if (key === 'ADDRESS_LINE_1') d.addr1 = val;
             else if (key === 'ADDRESS_LINE_2') d.addr2 = val;
+            setFontOnce('contactItem', fz);
           }
           i++;
         }
@@ -303,11 +338,15 @@ function parseMD(md) {
       }
       else if (lbl.includes('award')) {
         d.awardsHeader = hdr; i++;
+        setFontOnce('pill', hdrSize);
         while (i < lines.length) {
           const al = lines[i].trim();
           if (al.startsWith('#')) break;   // next section — stop
           if (!al) { i++; continue; }      // blank line — skip
-          if (al.startsWith('- ')) d.awards.push(extractVal(al.slice(2)));
+          if (al.startsWith('- ')) {
+            d.awards.push(extractVal(al.slice(2)));
+            setFontOnce('awardsItem', extractFont(al.slice(2)));
+          }
           i++;
         }
         continue;
@@ -318,13 +357,17 @@ function parseMD(md) {
           const pl = lines[i].trim();
           if (pl.startsWith('#')) break;   // next section — stop
           if (!pl) { i++; continue; }      // blank line — skip
-          if (pl.startsWith('- ')) d.profile.push(extractVal(pl.slice(2)));
+          if (pl.startsWith('- ')) {
+            d.profile.push(extractVal(pl.slice(2)));
+            setFontOnce('profileItem', extractFont(pl.slice(2)));
+          }
           i++;
         }
         continue;
       }
       else if (lbl.includes('work')) {
         d.workHeader = hdr;
+        setFontOnce('workHeader', hdrSize);
       }
     }
     else if (t.startsWith('### ')) {
@@ -336,13 +379,18 @@ function parseMD(md) {
         dates:    parts[2] ? extractVal(parts[2]) : '',
         projects: []
       };
+      setFontOnce('jobPos', parts[0] ? extractFont(parts[0]) : '');
+      setFontOnce('jobCompany', parts[1] ? extractFont(parts[1]) : '');
+      setFontOnce('jobDates', parts[2] ? extractFont(parts[2]) : '');
     }
     else if (t.startsWith('#### ')) {
       flushProj();
       proj = { name: extractVal(t.slice(5)), items: [] };
+      setFontOnce('projName', extractFont(t.slice(5)));
     }
     else if (t.startsWith('- ') && proj) {
       proj.items.push(extractVal(t.slice(2)));
+      setFontOnce('bullet', extractFont(t.slice(2)));
     }
     i++;
   }
@@ -363,8 +411,32 @@ function setDisplay(id, show) {
   if (el) el.style.display = show ? '' : 'none';
 }
 
+function applyFontVars(fonts) {
+  const resume = document.getElementById('resume');
+  if (!resume || !fonts) return;
+
+  const varMap = {
+    name: '--fs-name',
+    pill: '--fs-pill',
+    contactItem: '--fs-contact-item',
+    awardsItem: '--fs-awards-item',
+    profileItem: '--fs-profile-item',
+    workHeader: '--fs-work-header',
+    jobPos: '--fs-job-pos',
+    jobCompany: '--fs-job-company',
+    jobDates: '--fs-job-dates',
+    projName: '--fs-proj-name',
+    bullet: '--fs-bullet'
+  };
+
+  Object.keys(varMap).forEach(key => {
+    if (fonts[key]) resume.style.setProperty(varMap[key], fonts[key]);
+  });
+}
+
 function render(md) {
   const d = parseMD(md);
+  applyFontVars(d.fonts);
 
   // Name
   setText('r-name', d.name);

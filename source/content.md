@@ -1,4 +1,4 @@
-# NAME : NAME (font_size: 96px)
+# NAME : NAME (font_size: 84px)
 
 ## CONTACT : CONTACT_ME (font_size: 32px)
 

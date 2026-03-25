@@ -2,22 +2,21 @@
   font-family: 'Helvetica World';
   src: url('./fonts/TGBonum-400.otf') format('opentype');
   font-weight: 400;
-  font-style: normal;
-  font-display: swap;
 }
 @font-face {
   font-family: 'Helvetica World';
-  src: url('./fonts/TGHeros-400.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+  src: url('./fonts/TGBonum-400.otf') format('opentype');
+  font-weight: 700;
 }
 @font-face {
   font-family: 'Helvetica World';
   src: url('./fonts/TGHeros-700.otf') format('opentype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Helvetica World';
+  src: url('./fonts/TGHeros-400.otf') format('opentype');
   font-weight: 700;
-  font-style: normal;
-  font-display: swap;
 }
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -247,7 +246,7 @@ body {
    MAIN CONTENT
 ══════════════════════════════════════ */
 #main {
-  flex: 1; padding: 40px 131px 72px 72px;
+  flex: 1; padding: 40px 131px 72px 66px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -285,7 +284,7 @@ body {
 }
 
 /* Job entry */
-.job { margin-bottom: 54px; }
+.job { margin-bottom: 50.0px; }
 
 /* Position header row */
 .job-hrow {
