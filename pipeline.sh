@@ -242,14 +242,24 @@ stage_optimize() {
         log_error "OCR CSV files not found. Run stage 3 (ocr) first."
         return 1
     fi
+
+    if [[ -f "$WORKSPACE/pipeline/optimize/visual_comparison.py" ]]; then
+        log "Generating pre-optimization overlap preview …"
+        run_cmd "$PYTHON" "$WORKSPACE/pipeline/optimize/visual_comparison.py" || return 1
+    fi
     
-    log "Running alignment optimizer …"
-    run_cmd "$PYTHON" "$WORKSPACE/pipeline/optimize/align_optimizer.py" || return 1
+    log "Running alignment optimizer (max 5 hill-climb steps) …"
+    run_cmd "$PYTHON" "$WORKSPACE/pipeline/optimize/align_optimizer.py" --max-steps 5 || return 1
+
+    if [[ -f "$WORKSPACE/pipeline/optimize/visual_comparison.py" ]]; then
+        log "Generating post-optimization overlap preview …"
+        run_cmd "$PYTHON" "$WORKSPACE/pipeline/optimize/visual_comparison.py" || return 1
+    fi
     
     # Check final alignment score
     if [[ -f "$WORKSPACE/generated/temp/pipeline.log" ]]; then
         local final_score
-        final_score=$(grep -oP "composite=\s*\K[\d.]+(?=%)" "$WORKSPACE/generated/temp/pipeline.log" | tail -1)
+        final_score=$(sed -n 's/.*composite=[[:space:]]*\([0-9.][0-9.]*\)%.*/\1/p' "$WORKSPACE/generated/temp/pipeline.log" | tail -1)
         if [[ -n "$final_score" ]]; then
             log_success "Final alignment score: $final_score%"
         fi

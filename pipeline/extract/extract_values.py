@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""
-extract_values.py
-=================
-Parses source/content.md and writes all label values to generated/temp/content.txt.
+"""extract_values — extract colon-separated values from content.md.
 
-Handles piped formats and ignores section headers (# lines) and list
-markers (- lines).
+Reads ``source/content.md``, strips optional ``(font_size: Npx)`` markers,
+and writes the extracted values (one per line) to
+``generated/temp/content.txt``. Intended as the first step of the pipeline
+to produce a simple token list used by downstream OCR helpers.
 
 Usage:
-  python pipeline/extract/extract_values.py   # from workspace root
+        python pipeline/extract/extract_values.py
 """
 
 import re

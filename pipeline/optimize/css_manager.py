@@ -1,24 +1,11 @@
-"""
-css_manager.py
---------------
-Safe read / patch / restore helper for html_info/template.css.
+"""css_manager — safe read/patch/restore helper for template.css.
 
-All mutations go through set_value(), which:
-  1. Reads the current file from disk.
-  2. Applies a targeted regex substitution (selector-scoped).
-  3. Writes atomically via a temp file → rename.
+Provides an API to snapshot, modify and restore selector-scoped CSS
+properties in ``source/template.css``. Changes are written atomically and a
+snapshot stack supports easy rollback during optimization experiments.
 
-Snapshots allow instant rollback without touching disk more than necessary.
-
-Supported value types
----------------------
-  px     – integer or float followed by "px"  e.g. ``margin-bottom: 4px``
-  bare   – unitless number                    e.g. ``line-height: 1.6``
-  em     – number followed by "em"            e.g. ``letter-spacing: 0.5em``
-  string – arbitrary CSS value string         e.g. ``padding: 0 30px 0 126px``
-
-For ``padding`` shorthand the helper can set individual sides via
-``get_padding_side / set_padding_side``.
+Supported helpers include numeric extraction, padding shorthand helpers and
+batch apply/delta semantics used by the optimizer.
 """
 
 import os

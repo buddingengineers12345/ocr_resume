@@ -227,7 +227,7 @@
 // This makes it easy to update resume content separately from the template.
 
 // Fallback default MD (in case fetch fails)
-const FALLBACK_MD = `# NAME : NAME
+const DEFAULT_MD = `# NAME : NAME
 
 ## CONTACT : CONTACT_ME
 
@@ -235,7 +235,7 @@ PHONE_NUMBER : Phone_Number
 EMAIL : Email
 `;
 
-let currentMD = FALLBACK_MD;
+let currentMD = DEFAULT_MD;
 
 // Load content from content.md file
 async function loadContentFromFile() {

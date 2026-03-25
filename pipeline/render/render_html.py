@@ -1,31 +1,12 @@
-"""
-render_html.py
---------------
-Pipeline:
-  1. Reads  html_info/content.md  and  html_info/template.html.
-  2. Injects the MD text as DEFAULT_MD in the template's JavaScript and adds
-     a DOMContentLoaded render call → writes  html_pipeline/resume.html
-     (Task 1 – "load md content from html_info/content.md").
-  3. Renders  html_pipeline/resume.html  via Playwright (Chromium headless)
-     (Task 2 – "render the html file in html_info/template.html").
-  4. Saves the PNG to  image_reference/Output_1.png
-     (Task 3 – "save the image as image_reference/Output_1.png").
+"""Render HTML templates with embedded markdown to a PNG using Playwright.
 
-Hang-safety notes
------------------
-* Playwright page.goto has a 30 s timeout; PlaywrightTimeoutError exits cleanly.
-* page.wait_for_timeout(1500) lets the JS MD-renderer finish before screenshot.
-* Browser is always closed in a finally block so no zombie processes remain.
+Builds ``generated/resume.html`` by injecting the markdown from
+``source/content.md`` into the template, applies extracted font variables to
+the resulting HTML/CSS, and renders the page to ``generated/Output_1.png``
+using headless Chromium (Playwright). Includes safety timeouts and logs.
 
 Usage:
-    python html_pipeline/render_html.py
-    python html_pipeline/render_html.py \\
-        --template html_info/template.html \\
-        --md       html_info/content.md    \\
-        --html     html_pipeline/resume.html \\
-        --out      image_reference/Output_1.png \\
-        --width    1414 \\
-        --height   2000
+     python pipeline/render/render_html.py
 """
 
 import re
@@ -62,6 +43,147 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
+FONT_VAR_MAP = {
+    "name": "--fs-name",
+    "pill": "--fs-pill",
+    "contactItem": "--fs-contact-item",
+    "awardsItem": "--fs-awards-item",
+    "profileItem": "--fs-profile-item",
+    "workHeader": "--fs-work-header",
+    "jobPos": "--fs-job-pos",
+    "jobCompany": "--fs-job-company",
+    "jobDates": "--fs-job-dates",
+    "projName": "--fs-proj-name",
+    "bullet": "--fs-bullet",
+}
+
+
+def _extract_value_and_font(raw: str) -> tuple[str, str]:
+    idx = raw.find(" : ")
+    value = raw[idx + 3 :].strip() if idx != -1 else raw.strip()
+    m = re.search(r"\(font_size\s*:\s*([0-9.]+\s*px)\)\s*$", value, flags=re.IGNORECASE)
+    if not m:
+        return value.strip(), ""
+    clean_value = re.sub(
+        r"\s*\(font_size\s*:\s*[0-9.]+\s*px\)\s*$",
+        "",
+        value,
+        flags=re.IGNORECASE,
+    ).strip()
+    return clean_value, m.group(1).replace(" ", "")
+
+
+def extract_font_vars_from_md(md_content: str) -> dict[str, str]:
+    """Extract font sizes from markdown markers like '(font_size: 32px)'."""
+    fonts = {key: "" for key in FONT_VAR_MAP}
+    section = ""
+
+    def set_once(key: str, size: str) -> None:
+        if size and not fonts[key]:
+            fonts[key] = size
+
+    for raw_line in md_content.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        if line.startswith("# "):
+            _, size = _extract_value_and_font(line[2:])
+            set_once("name", size)
+            section = ""
+            continue
+
+        if line.startswith("## "):
+            inner = line[3:].strip()
+            label = inner.split(" : ", 1)[0].lower()
+            _, size = _extract_value_and_font(inner)
+            if "contact" in label:
+                section = "contact"
+                set_once("pill", size)
+            elif "award" in label:
+                section = "awards"
+                set_once("pill", size)
+            elif "profile" in label:
+                section = "profile"
+                set_once("pill", size)
+            elif "work" in label:
+                section = "work"
+                set_once("workHeader", size)
+            else:
+                section = ""
+            continue
+
+        if line.startswith("### "):
+            section = "work"
+            for idx, chunk in enumerate(line[4:].split("|")):
+                _, size = _extract_value_and_font(chunk.strip())
+                if idx == 0:
+                    set_once("jobPos", size)
+                elif idx == 1:
+                    set_once("jobCompany", size)
+                elif idx == 2:
+                    set_once("jobDates", size)
+            continue
+
+        if line.startswith("#### "):
+            section = "project"
+            _, size = _extract_value_and_font(line[5:])
+            set_once("projName", size)
+            continue
+
+        if line.startswith("- "):
+            _, size = _extract_value_and_font(line[2:])
+            if section == "awards":
+                set_once("awardsItem", size)
+            elif section == "profile":
+                set_once("profileItem", size)
+            elif section in {"work", "project"}:
+                set_once("bullet", size)
+            continue
+
+        if section == "contact":
+            _, size = _extract_value_and_font(line)
+            set_once("contactItem", size)
+
+    return fonts
+
+
+def apply_font_vars_to_css(css_content: str, font_vars: dict[str, str]) -> str:
+    updated = css_content
+    for key, css_var in FONT_VAR_MAP.items():
+        size = font_vars.get(key, "")
+        if not size:
+            continue
+        pattern = rf"({re.escape(css_var)}\s*:\s*)[^;]+;"
+        updated, _ = re.subn(pattern, rf"\\1{size};", updated)
+    return updated
+
+
+def apply_font_vars_to_html(html_content: str, font_vars: dict[str, str]) -> str:
+    declarations = " ".join(
+        f"{FONT_VAR_MAP[key]}: {size};"
+        for key, size in font_vars.items()
+        if size and key in FONT_VAR_MAP
+    )
+    if not declarations:
+        return html_content
+
+    def _inject_style(match: re.Match[str]) -> str:
+        attrs = match.group(1)
+        style_match = re.search(r'style="([^"]*)"', attrs)
+        if style_match:
+            existing = style_match.group(1).strip()
+            spacer = " " if existing and not existing.endswith(";") else ""
+            merged = f"{existing}{spacer}{declarations}".strip()
+            attrs = re.sub(r'style="[^"]*"', f'style="{merged}"', attrs, count=1)
+        else:
+            attrs = f'{attrs} style="{declarations}"'
+        return f"<div id=\"resume\"{attrs}>"
+
+    html_content, _ = re.subn(r'<div id="resume"([^>]*)>', _inject_style, html_content, count=1)
+    return html_content
+
+
 # ── Task 1: build resume.html + resume.css from template + content.md ───────────
 def build_resume_html(
     template_path: Path,
@@ -79,12 +201,18 @@ def build_resume_html(
     log.info("[build] Reading template : %s", template_path)
     template_html = template_path.read_text(encoding="utf-8")
 
+    log.info("[build] Reading markdown : %s", md_path)
+    md_content = md_path.read_text(encoding="utf-8")
+    font_vars = extract_font_vars_from_md(md_content)
+    log.info("[build] Extracted font vars: %s", {k: v for k, v in font_vars.items() if v})
+
     # ── CSS: copy template.css → resume.css with corrected font paths ─────────
     # Fonts live at source/fonts/; resume.css lives in generated/,
     # so relative paths need to go up one level and over into source/.
     log.info("[build] Reading CSS      : %s", css_template_path)
     css_content = css_template_path.read_text(encoding="utf-8")
     css_out = css_content.replace("./fonts/", "../source/fonts/")
+    css_out = apply_font_vars_to_css(css_out, font_vars)
     css_out_path.parent.mkdir(parents=True, exist_ok=True)
     css_out_path.write_text(css_out, encoding="utf-8")
     log.info("[build] resume.css written → %s", css_out_path)
@@ -93,9 +221,6 @@ def build_resume_html(
     template_html = template_html.replace(
         'href="./template.css"', 'href="./resume.css"', 1
     )
-
-    log.info("[build] Reading markdown : %s", md_path)
-    md_content = md_path.read_text(encoding="utf-8")
 
     # Escape so the MD text is safe inside a JS template literal (`...`)
     escaped_md = (
@@ -144,6 +269,9 @@ def build_resume_html(
     else:
         log.info("[build] DOMContentLoaded hook already present – skipped")
 
+    # Apply extracted font vars directly to #resume inline style for pre-render parity.
+    template_html = apply_font_vars_to_html(template_html, font_vars)
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(template_html, encoding="utf-8")
     log.info("[build] resume.html written → %s", out_path)
@@ -180,7 +308,7 @@ def render_html_to_png(
             log.info("[render] Browser launched")
             try:
                 page = browser.new_page(viewport={"width": width, "height": height})
-                file_url = html_path.as_uri()
+                file_url = html_path.resolve().as_uri()
                 log.info("[render] Navigating to: %s", file_url)
                 page.goto(file_url, wait_until="domcontentloaded", timeout=30_000)
                 log.info("[render] DOMContentLoaded – waiting 1.5 s for JS render")

@@ -1,29 +1,9 @@
-"""
-alignment_metric.py
--------------------
-Measures how well the rendered resume (Output_1) is aligned with the
-reference page (Page_1) using:
+"""alignment_metric — compute alignment and similarity metrics.
 
-  1. CSV position alignment  – per-pair pixel error on matched text objects
-  2. SSIM image similarity   – structural similarity on the full images
-
-Exports
--------
-compute(csv_o1, csv_p1, img_o1, img_p1) -> dict
-    Keys:
-        composite       float   0-100  (primary optimisation target)
-        alignment_pct   float   0-100  (% pairs within ±20 px)
-        ssim            float   0-1    (structural similarity)
-        mean_excess     float   px     (mean clamped-to-zero error per pair)
-        n_pairs         int
-        n_aligned       int
-        mean_dy_main    float   (signed mean Δy for main-panel objects)
-        mean_dy_sidebar float   (signed mean Δy for sidebar objects)
-        mean_dx_contact float   (signed mean Δx for sidebar contact/award)
-        drift_slope     float   (px of Δy added per px of y – bullet drift)
-        mean_height_scale float (mean((o1_height/p1_height)-1) across matched text)
-        mean_width_scale  float (mean((o1_width/p1_width)-1) across matched text)
-        pairs_df        list[dict]   per-pair details for logging
+Provides tools to compare the rendered output (Output_1) against the
+reference (Page_1) using per-object CSV alignment and optional SSIM image
+similarity. The main entry is ``compute(...)`` which returns a dictionary of
+diagnostic metrics used by the optimizer to guide CSS adjustments.
 """
 
 import csv

@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
-"""
-object_extraction.py
-====================
-Step 3 of the OCR pipeline.
+"""object_extraction — detect structural page elements using OpenCV.
 
-Detects structural elements (lines, dividers, boxes) using OpenCV morphological
-operations, then writes the structural objects into objects.csv (replacing any
-previous structural rows while preserving text rows from prior runs).
-
-When run standalone (without a prior text_extraction step), any existing text
-rows in objects.csv are used for overlap filtering so that structural detections
-do not clobber text regions.
+Finds contours representing lines, boxes and dividers via morphology and
+edge detection, filters those that overlap text regions and writes structural
+rows into the objects CSV. Can operate with or without a prior text-extraction
+pass; existing text rows are respected to avoid overwriting.
 
 Usage:
-  python ocr_pipeline/object_extraction.py   # from workspace root
-  python object_extraction.py                # from inside ocr_pipeline/
+        python pipeline/ocr/object_extraction.py
 """
 
 import sys

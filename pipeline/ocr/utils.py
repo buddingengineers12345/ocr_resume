@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""
-utils.py
-========
-Shared configuration, helpers, and I/O utilities for the OCR pipeline.
+"""ocr.utils — shared helpers and I/O utilities for OCR pipeline scripts.
 
-SCRIPT_DIR points to the workspace root (parent of this package directory)
-so that all scripts locate images and CSV files consistently regardless of
-how or where they are invoked.
+Provides workspace path configuration, CSV read/write helpers, image
+discovery, normalization helpers, and colour/coverage utilities used across
+the OCR extraction and annotation scripts.
 """
 
 import csv

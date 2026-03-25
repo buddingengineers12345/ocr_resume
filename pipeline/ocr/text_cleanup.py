@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
-"""
-text_cleanup.py
-===============
-Step 3a of the OCR pipeline (runs between text_extraction and object_extraction).
+"""text_cleanup — hide detected text regions by filling with background colour.
 
-Reads bounding boxes from objects.csv (text rows only), estimates the background
-colour of each region, and fills every bounding box with that colour so the text
-becomes invisible before structural-object detection.
-
-Generates:
-  output/text_cleaned.png
+Reads text bounding boxes from ``objects.csv``, estimates the background
+colour for each region and fills them so that structural detectors can find
+non-text elements without text interference. Produces ``text_cleaned.png``.
 
 Usage:
-  python ocr_pipeline/text_cleanup.py   # from workspace root
-  python text_cleanup.py                # from inside ocr_pipeline/
+        python pipeline/ocr/text_cleanup.py
 """
 
 import sys

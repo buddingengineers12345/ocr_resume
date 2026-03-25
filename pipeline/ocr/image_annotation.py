@@ -1,23 +1,15 @@
 #!/usr/bin/env python3
-"""
-image_annotation.py
-===================
-Final step of the OCR pipeline.
+"""image_annotation — draw coloured annotation boxes from objects.csv.
 
-Reads objects from objects.csv and draws coloured bounding boxes on the source image:
-  - Green : text word found in content.txt
-  - Red   : text word NOT found in content.txt
-  - Blue  : structural element
+Reads the objects CSV and writes an annotated PNG showing:
+    - Green for matched text (in content.txt)
+    - Red for unmatched text
+    - Blue for structural elements
 
-The output filename is chosen automatically based on the object types present
-in the CSV, or can be overridden with --output:
-  annotated_text.png    – text objects only
-  annotated_objects.png – structural objects only
-  annotated_full.png    – both text and structural objects
+Output filename is auto-detected but can be overridden with ``--output``.
 
 Usage:
-  python ocr_pipeline/image_annotation.py [--output FILENAME]
-  python image_annotation.py [--output FILENAME]   # from inside ocr_pipeline/
+        python pipeline/ocr/image_annotation.py [--output FILENAME]
 """
 
 import argparse

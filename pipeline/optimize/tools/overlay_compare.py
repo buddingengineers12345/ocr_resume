@@ -1,16 +1,8 @@
-"""
-overlay_compare.py
-------------------
-Overlays the rendered resume (Output_1.png) on top of the reference
-image (Page_1.png) to visually compare alignment, spacing, and layout.
+"""overlay_compare — simple visual overlay and diff utilities.
 
-Usage (from workspace root):
-    python optimize_pipeline/overlay_compare.py
-
-Outputs (written to optimize_pipeline/):
-    overlay_50.png            — 50% alpha blend
-    overlay_side_by_side.png  — original | rendered side by side
-    overlay_diff.png          — pixel-level difference heatmap
+Provides convenience functions to blend, side-by-side and produce a
+difference heatmap between the reference and rendered images. Intended as a
+developer utility to visualise alignment and layout changes.
 """
 
 from pathlib import Path

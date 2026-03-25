@@ -1,28 +1,10 @@
-"""
-align_optimizer.py
-------------------
-Main optimization loop.  Modifies html_info/template.css to align the
-rendered resume with the reference image to ≥ 90 % alignment.
+"""align_optimizer — greedy optimizer that tweaks CSS to improve alignment.
 
-Three phases
-------------
-Phase 0 — Analytical Warm Start
-    Apply 7 analytically-derived CSS changes (exact pixel measurements).
-    Expected jump: ~25 % → ~77 % alignment in one render.
-
-Phase 1 — Drift Correction
-    Apply 3 bullet/row-spacing fixes that resolve growing y-drift.
-    Expected jump: ~77 % → ~85 % alignment.
-
-Phase 2 — Greedy Hill-Climbing
-    Direction-aware property search.  Each iteration tries every property
-    in the catalogue × every candidate delta, keeps the best improvement.
-    Accepts only if composite score rises by ≥ MIN_IMPROVE %.
-
-Usage
------
-    python optimize_pipeline/align_optimizer.py          # from workspace root
-    python optimize_pipeline/align_optimizer.py --dry-run  # score only, no changes
+Runs a multi-phase optimization that modifies ``source/template.css`` to
+reduce alignment error between the rendered output and the reference image.
+Phases include an analytical warm-start, drift corrections and greedy
+hill-climbing guided by alignment metrics. The script can run in dry-run
+mode to compute scores without persisting changes.
 """
 
 import argparse
@@ -50,6 +32,7 @@ MAX_ITER_HILLCLIMB = 50          # safety cap on hill-climbing iterations
 GENERATED_DIR      = WORKSPACE / "generated"
 PROGRESS_DIR       = GENERATED_DIR / "temp"
 LOG_CSV            = GENERATED_DIR / "optimize_logs.csv"
+VISUAL_COMPARE_PY  = WORKSPACE / "pipeline" / "optimize" / "visual_comparison.py"
 
 CSS_PATH           = WORKSPACE / "source" / "template.css"
 IMG_O1             = GENERATED_DIR / "Output_1.png"
@@ -111,6 +94,15 @@ def render_and_score(label: str = "") -> dict:
     run_ocr_output_only()
     m = metric_compute(csv_o1=CSV_O1, csv_p1=CSV_P1, img_o1=IMG_O1, img_p1=IMG_P1)
     return m
+
+
+def generate_overlap_preview(context: str = "") -> None:
+    """Run visual_comparison.py to snapshot current overlap state."""
+    if not VISUAL_COMPARE_PY.exists():
+        return
+    rc = _run([PYTHON, str(VISUAL_COMPARE_PY)], label=f"visual_compare:{context}")
+    if rc != 0:
+        print(f"  [WARN] visual comparison failed during {context} (exit {rc})")
 
 
 # ── Logging ───────────────────────────────────────────────────────────────────
@@ -404,7 +396,8 @@ def _direction_filter(deltas: list, m: dict, selector: str, prop: str) -> list:
 
 
 def phase2_hill_climb(mgr: CSSManager, baseline: dict,
-                      dry_run: bool = False) -> dict:
+                      dry_run: bool = False,
+                      max_steps: int = MAX_ITER_HILLCLIMB) -> dict:
     print("\n" + "="*60)
     print("PHASE 2 — Greedy Hill-Climbing")
     print("="*60)
@@ -413,7 +406,7 @@ def phase2_hill_climb(mgr: CSSManager, baseline: dict,
     no_improve_streak = 0
     MAX_NO_IMPROVE = 5
 
-    for iteration in range(1, MAX_ITER_HILLCLIMB + 1):
+    for iteration in range(1, max_steps + 1):
         if best["alignment_pct"] >= TARGET_ALIGNMENT:
             print(f"\n  ★ TARGET {TARGET_ALIGNMENT}% REACHED at iteration {iteration-1}")
             break
@@ -504,6 +497,8 @@ def phase2_hill_climb(mgr: CSSManager, baseline: dict,
             _print_iter("HILL", iteration, best, applied)
             _log_row("hill", iteration, best, win_sel, win_prop, win_delta)
             _save_css_snapshot(f"iter_{iteration:03d}")
+            if not dry_run:
+                generate_overlap_preview(context=f"hill_{iteration:03d}")
             no_improve_streak = 0
 
         else:
@@ -518,7 +513,7 @@ def phase2_hill_climb(mgr: CSSManager, baseline: dict,
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def main(dry_run: bool = False, resume: bool = False) -> None:
+def main(dry_run: bool = False, resume: bool = False, max_steps: int = MAX_ITER_HILLCLIMB) -> None:
     t0 = time.time()
     mgr = CSSManager(CSS_PATH)
     PROGRESS_DIR.mkdir(parents=True, exist_ok=True)
@@ -536,7 +531,9 @@ def main(dry_run: bool = False, resume: bool = False) -> None:
         if m["alignment_pct"] >= TARGET_ALIGNMENT:
             print(f"\n  ✓ Already at {m['alignment_pct']:.1f}% — nothing to do.")
             return
-        m = phase2_hill_climb(mgr, m, dry_run=dry_run)
+        if not dry_run:
+            generate_overlap_preview(context="resume_baseline")
+        m = phase2_hill_climb(mgr, m, dry_run=dry_run, max_steps=max_steps)
         _print_final(m, t0)
         return
 
@@ -551,6 +548,8 @@ def main(dry_run: bool = False, resume: bool = False) -> None:
     _print_iter("BASE", -1, baseline)
     print_report(baseline)
     _log_row("baseline", 0, baseline)
+    if not dry_run:
+        generate_overlap_preview(context="baseline")
 
     if baseline["alignment_pct"] >= TARGET_ALIGNMENT:
         print(f"\n  ✓ Already at {baseline['alignment_pct']:.1f}% — nothing to do.")
@@ -573,7 +572,7 @@ def main(dry_run: bool = False, resume: bool = False) -> None:
         return
 
     # ── Phase 2 ───────────────────────────────────────────────────────────────
-    m = phase2_hill_climb(mgr, m, dry_run=dry_run)
+    m = phase2_hill_climb(mgr, m, dry_run=dry_run, max_steps=max_steps)
 
     _print_final(m, t0)
 
@@ -603,5 +602,11 @@ if __name__ == "__main__":
         "--resume", action="store_true",
         help="Skip phases 0 and 1; hill-climb from current CSS state",
     )
+    parser.add_argument(
+        "--max-steps", type=int, default=MAX_ITER_HILLCLIMB,
+        help="Maximum number of hill-climb optimization steps",
+    )
     args = parser.parse_args()
-    main(dry_run=args.dry_run, resume=args.resume)
+    if args.max_steps < 1:
+        raise SystemExit("--max-steps must be >= 1")
+    main(dry_run=args.dry_run, resume=args.resume, max_steps=args.max_steps)

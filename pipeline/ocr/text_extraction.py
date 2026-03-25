@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""
-text_extraction.py
-==================
-Step 2 of the OCR pipeline.
+"""text_extraction — multi-pass Tesseract OCR with preprocessing and merge.
 
-Runs Tesseract OCR on the input image using multiple preprocessing passes
-to handle varied image styles (dark-on-dark panels, light-on-light areas,
-letter-spaced text, etc.).  Results from all passes are deduplicated by
-spatial overlap and the highest-confidence detection is kept for each word.
+Performs several preprocessing strategies (CLAHE, adaptive thresholding,
+Otsu, sharpening) to recover words across varied background styles. Word
+detections from all passes are merged using IoU/NMS heuristics to return a
+clean set of word-level bounding boxes suitable for CSV output.
 
 Usage:
-  python ocr_pipeline/text_extraction.py   # from workspace root
-  python text_extraction.py                # from inside ocr_pipeline/
+        python pipeline/ocr/text_extraction.py
 """
 
 import sys

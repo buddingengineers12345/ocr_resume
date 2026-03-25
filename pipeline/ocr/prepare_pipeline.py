@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""
-prepare_pipeline.py
-===================
-Step 1 of the OCR pipeline.
+"""prepare_pipeline — initialize OCR run output and validate inputs.
 
-- Validates that the input image and content.txt exist.
-- Initialises a fresh objects.csv (headers only), clearing any previous run.
+Validates presence of the input image and generated/temp/content.txt, then
+initialises an empty ``objects.csv`` (header only) in the per-image
+``generated/ocr/{image_stem}`` directory. Used as the preparation step prior
+to OCR extraction.
 
 Usage:
-  python ocr_pipeline/prepare_pipeline.py   # from workspace root
-  python prepare_pipeline.py                # from inside ocr_pipeline/
+        python pipeline/ocr/prepare_pipeline.py
 """
 
 import csv

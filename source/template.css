@@ -133,6 +133,17 @@ body {
    RESUME SHELL
 ══════════════════════════════════════ */
 #resume {
+  --fs-name: 84px;
+  --fs-pill: 32px;
+  --fs-contact-item: 18px;
+  --fs-awards-item: 16px;
+  --fs-profile-item: 18px;
+  --fs-work-header: 32px;
+  --fs-job-pos: 24px;
+  --fs-job-company: 18px;
+  --fs-job-dates: 18px;
+  --fs-proj-name: 18px;
+  --fs-bullet: 16px;
   width: 1414px;
   background: var(--main-bg);
   display: flex;
@@ -178,7 +189,7 @@ body {
   padding: 10px 0;
   width: 303px;
   text-align: center;
-  font-size: 36px;
+  font-size: var(--fs-pill);
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -195,7 +206,7 @@ body {
   display: flex;
   align-items: flex-start; margin-bottom: 21px;
   color: var(--sidebar-text);
-  font-size: 18px;
+  font-size: var(--fs-contact-item);
   line-height: 1.5;
 }
 .cicon {
@@ -223,7 +234,7 @@ body {
   display: flex;
   align-items: flex-start; margin-bottom: 19px;
   color: var(--sidebar-text);
-  font-size: 16px;
+  font-size: var(--fs-awards-item);
   line-height: 1.5;
   width: 100%;
   max-width: 100%;
@@ -246,7 +257,7 @@ body {
    MAIN CONTENT
 ══════════════════════════════════════ */
 #main {
-  flex: 1; padding: 40px 131px 72px 66px;
+  flex: 1; padding: 40px 131px 72px 74px;
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -255,25 +266,24 @@ body {
 /* Name */
 #r-name {
   font-family: 'Helvetica World', sans-serif;
-  font-size: 96px;
+  font-size: var(--fs-name);
   font-weight: 400;
   color: #111;
-  line-height: 1;
-  margin-bottom: 23px;
+  line-height: 1; margin-bottom: 19.0px;
   letter-spacing: -0.5px;
 }
 
 /* Profile */
 #profile { margin-bottom: 40px; }
 .pline {
-  font-size: 18px;
+  font-size: var(--fs-profile-item);
   color: #3b3b3b;
   line-height: 1.7;
 }
 
 /* Section header */
 .sec-head {
-  font-size: 36px;
+  font-size: var(--fs-work-header);
   font-weight: 700;
   letter-spacing: 3px;
   text-transform: uppercase;
@@ -284,7 +294,7 @@ body {
 }
 
 /* Job entry */
-.job { margin-bottom: 50.0px; }
+.job { margin-bottom: 52.0px; }
 
 /* Position header row */
 .job-hrow {
@@ -295,13 +305,13 @@ body {
 }
 .job-pos {
   font-family: 'Helvetica World', sans-serif;
-  font-size: 24px;
+  font-size: var(--fs-job-pos);
   font-weight: 700;
   color: #111;
 }
 .job-right { display: flex; align-items: baseline; }
 .job-company {
-  font-size: 18px;
+  font-size: var(--fs-job-company);
   font-weight: 700;
   letter-spacing: 4px;
   color: #373536;
@@ -309,7 +319,7 @@ body {
   margin-right: 20px;
 }
 .job-dates {
-  font-size: 18px;
+  font-size: var(--fs-job-dates);
   font-weight: 300;
   color: #444;
   white-space: nowrap;
@@ -318,7 +328,7 @@ body {
 /* Project */
 .proj { margin-bottom: 22px; }
 .proj-name {
-  font-size: 18px;
+  font-size: var(--fs-proj-name);
   font-weight: 400;
   color: #373536; margin-bottom: 5.0px;
 }
@@ -328,7 +338,7 @@ body {
   margin: 0;
 }
 .proj-list li {
-  font-size: 16px;
+  font-size: var(--fs-bullet);
   color: #3b3b3b;
   line-height: 1.6; margin-bottom: 1px;
 }

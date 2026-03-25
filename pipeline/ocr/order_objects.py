@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-"""
-order_objects.py
-================
-Reorders objects.csv to match the reference order from content.txt.
+"""order_objects — reorder OCR CSV rows to match content order.
 
-Text objects are sorted according to their appearance in content.txt,
-followed by all structural objects at the end.
+Sorts text objects by their appearance in ``generated/temp/content.txt`` and
+appends structural and character objects afterwards. Ensures CSV order
+reflects the logical reading order for downstream processing.
 
 Usage:
-  python ocr_pipeline/order_objects.py   # from workspace root
-  python order_objects.py                # from inside ocr_pipeline/
+        python pipeline/ocr/order_objects.py
 """
 
 import sys

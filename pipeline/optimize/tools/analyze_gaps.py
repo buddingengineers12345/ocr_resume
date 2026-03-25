@@ -1,12 +1,8 @@
-"""
-analyze_gaps.py
----------------
-Prints a detailed alignment gap report comparing Output_1 (rendered)
-against Page_1 (reference).  Shows every matched pair with pixel offsets,
-grouped into misaligned and aligned sections.
+"""analyze_gaps — print a detailed alignment gap report.
 
-Usage (from workspace root):
-    python optimize_pipeline/analyze_gaps.py
+Runs the alignment metric and tabulates matched pairs with their pixel
+offsets, grouping misaligned and aligned pairs for inspection. Useful for
+debugging specific alignment failures after a render/OCR run.
 """
 
 import sys

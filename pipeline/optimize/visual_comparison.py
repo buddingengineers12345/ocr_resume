@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""
-Visual Comparison Tool — Generate diff and overlay images
-Compares rendered Output_1.png against reference Page_1.png
+"""visual_comparison — generate overlay, side-by-side and diff heatmap.
 
-Creates:
-1. overlay_comparison.png — Animated-style layers showing alignment
-2. side_by_side_comparison.png — Direct visual comparison
-3. diff_heatmap.png — Highlighting differences via color intensity
+Compares the rendered ``generated/Output_1.png`` against the reference
+``source/references/Page_1.png`` and writes comparison artifacts into
+``generated/comparison/`` for quick visual inspection of alignment and
+structural differences.
 """
 
 import sys
