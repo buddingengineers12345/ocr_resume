@@ -1,12 +1,26 @@
 #!/usr/bin/env python3
 """order_objects — reorder OCR CSV rows to match content order.
 
-Sorts text objects by their appearance in ``generated/temp/content.txt`` and
-appends structural and character objects afterwards. Ensures CSV order
-reflects the logical reading order for downstream processing.
+**Purpose:**
+Sorts OCR-detected text objects to match their logical order in the reference
+content file (content.txt). Ensures downstream processing sees text in the
+intended reading order, not visual page order.
 
-Usage:
-        python pipeline/ocr/order_objects.py
+**Sorting strategy:**
+1. **Text objects:** Reordered by appearance in content.txt (handling duplicates)
+   - Unmatched text objects appended at end (fallback for OCR extras)
+2. **Structural objects:** Sorted by y-coordinate descending (bottom-to-top)
+3. **Character objects:** Appended at the end (typically empty)
+
+**Input files:**
+- generated/ocr/{image_stem}/objects.csv (from text_extraction + object_extraction)
+- generated/temp/content.txt (reference token order from extract_values.py)
+
+**Output files:**
+- generated/ocr/{image_stem}/objects.csv (reordered in place)
+
+**Usage:**
+    python pipeline/ocr/order_objects.py
 """
 
 import sys
@@ -26,7 +40,17 @@ from utils import (
 
 
 def order_objects() -> None:
-    """Reorder objects.csv: text (by content.txt), structural (y desc), then char."""
+    """Reorder objects.csv to match content.txt reading order then structural/char.
+    
+    **Processing steps:**
+    1. Load reference order from content.txt
+    2. Load all objects from objects.csv, separate by type
+    3. Group text objects by content value (to handle duplicates)
+    4. Iterate reference order, consuming one text object per entry
+    5. Append unmatched text objects (OCR detections not in reference)
+    6. Sort structural objects by y-coordinate descending
+    7. Write reordered CSV back in place
+    """
     image_path = find_image()
     output_csv = get_output_csv(image_path)
 

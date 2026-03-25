@@ -1,10 +1,51 @@
 """align_optimizer — greedy optimizer that tweaks CSS to improve alignment.
 
-Runs a multi-phase optimization that modifies ``source/template.css`` to
-reduce alignment error between the rendered output and the reference image.
-Phases include an analytical warm-start, drift corrections and greedy
-hill-climbing guided by alignment metrics. The script can run in dry-run
-mode to compute scores without persisting changes.
+**Purpose:**
+Iteratively modifies CSS properties in source/template.css to reduce alignment
+error between rendered output and reference image. Goal is to match text position
+and spacing so OCR-detected objects align precisely with their reference locations.
+
+**Multi-phase optimization:**
+
+1. **Warm-start (Phase 0):** Analytical CSS corrections from pixel measurements
+   - Based on current deviation analysis (mean_dy_main, mean_dx_contact, etc.)
+   - Applied in batch and rendered once for rapid improvement
+   
+2. **Drift correction (Phase 1):** Addresses systematic vertical drift
+   - Analyzes main vs. sidebar panels separately
+   - Adjusts spacing properties to ensure consistent alignment
+   
+3. **Hill-climbing (Phase 2):** Greedy iterative refinement
+   - Per-iteration: render → OCR → score → suggest best change
+   - Accepts improvements >= MIN_COMPOSITE_IMPROVE (typically 0.1%)
+   - Stops when target alignment (90%) reached or max iterations exceeded
+
+**Metrics tracked:**
+- Composite score (weighted combination of metrics)
+- Alignment percentage (% of objects within threshold distance)
+- Structural Similarity Index (SSIM) to reference image
+- Individual direction offsets (dy, dx by region)
+
+**Logging:**
+- All iterations logged to generated/optimize_logs.csv
+- Snapshot CSS at key milestones (warm_start.css, drift_fix.css, etc.)
+- Visual comparison overlays optionally generated
+
+**Dry-run mode:**
+- Computes scores without persisting CSS changes
+- Useful for analyzing optimization progress without modifying template
+
+**Input files:**
+- source/template.css (modified in-place)
+- source/content.md (for context)
+- source/references/Page_1.png (reference image + OCR)
+- generated/output_1.png (rendered output, re-generated each iteration)
+
+**Output files:**
+- source/template.css (optimized CSS, can be rolled back)
+- generated/optimize_logs.csv (iteration history)
+- generated/temp/*.css (snapshots at each phase)
+- generated/comparison/ (optional visual overlays)
 """
 
 import argparse
@@ -45,7 +86,16 @@ PYTHON = sys.executable
 # ── Render + OCR ──────────────────────────────────────────────────────────────
 
 def _run(cmd: list, env: dict | None = None, label: str = "") -> int:
-    """Run a subprocess, stream stdout/stderr, return exit code."""
+    """Run a subprocess in workspace directory, stream output, return exit code.
+    
+    Args:
+        cmd: Command list (e.g., [python_exe, script_path, args...])
+        env: Optional dict of environment variables (merged with os.environ)
+        label: Optional label for logging (not used currently)
+        
+    Returns:
+        int: Exit code from subprocess
+    """
     full_env = {**os.environ, **(env or {})}
     result = subprocess.run(
         cmd,

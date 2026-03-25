@@ -1,15 +1,36 @@
 #!/usr/bin/env python3
 """image_annotation — draw coloured annotation boxes from objects.csv.
 
-Reads the objects CSV and writes an annotated PNG showing:
-    - Green for matched text (in content.txt)
-    - Red for unmatched text
-    - Blue for structural elements
+**Purpose:**
+Creates a visual debugging output that overlays OCR-detected objects with
+colored bounding boxes and labels. Useful for verifying OCR accuracy and
+inspecting which text was matched vs. unmatched against content.txt.
 
-Output filename is auto-detected but can be overridden with ``--output``.
+**Color scheme:**
+- **Green:** Text matched in content.txt reference (reference_words set)
+- **Red:** Text detected but not matched in content.txt (OCR extras/errors)
+- **Blue:** Structural elements (lines, boxes, dividers)
 
-Usage:
-        python pipeline/ocr/image_annotation.py [--output FILENAME]
+**Output naming:**
+Auto-detects output filename based on object types present:
+- "annotated_full.png" if both text and structural objects
+- "annotated_text.png" if only text objects
+- "annotated_objects.png" if only structural objects
+- "annotated_empty.png" if no objects
+
+Can override with --output flag.
+
+**Input files:**
+- source/references/Page_1.png (or IMAGE_PATH env var)
+- generated/ocr/{image_stem}/objects.csv (from OCR extraction)
+- generated/temp/content.txt (for reference word validation)
+
+**Output files:**
+- generated/ocr/{image_stem}/annotated_*.png (annotated visualization)
+
+**Usage:**
+    python pipeline/ocr/image_annotation.py
+    python pipeline/ocr/image_annotation.py --output custom_name.png
 """
 
 import argparse
@@ -35,7 +56,15 @@ from utils import (
 
 
 def _auto_output_name(text_objects: list[dict], structural_objects: list[dict]) -> str:
-    """Infer the output filename from which object types are present."""
+    """Infer the output filename from which object types are present.
+    
+    Args:
+        text_objects: List of text/char objects
+        structural_objects: List of structural objects
+        
+    Returns:
+        str: Filename ("annotated_full.png", "annotated_text.png", etc.)
+    """
     has_text = bool(text_objects)
     has_struct = bool(structural_objects)
     if has_text and has_struct:
@@ -53,7 +82,23 @@ def annotate_image(
     structural_objects: list[dict],
     reference_words: set[str],
 ) -> cv2.typing.MatLike:
-    """Draw bounding boxes on a copy of the image and return the annotated array."""
+    """Draw bounding boxes on a copy of the image and return the annotated array.
+    
+    **Drawing:**
+    - Text objects: Rectangle (2px) with label centered at bottom-left of box
+      - GREEN if text is in reference_words (matched)
+      - RED otherwise (unmatched)
+    - Structural objects: BLUE rectangles with "structural" label
+    
+    Args:
+        image_bgr: OpenCV image array (BGR, uint8)
+        text_objects: List of text/char object dicts
+        structural_objects: List of structural object dicts
+        reference_words: Set of normalized tokens from content.txt
+        
+    Returns:
+        cv2.typing.MatLike: Copy of input image with drawn annotations
+    """
     font = cv2.FONT_HERSHEY_SIMPLEX
     out = image_bgr.copy()
 
@@ -76,6 +121,20 @@ def annotate_image(
 
 
 def run(output_name: str | None = None) -> None:
+    """Load image and CSV, draw annotations, save to output file.
+    
+    **Execution:**
+    1. Find image and CSV, validate they exist
+    2. Load reference tokens from content.txt
+    3. Read all objects from CSV, separate text and structural
+    4. Draw annotations on image copy
+    5. Auto-detect output filename or use provided name
+    6. Save annotated image (BGR format) to output directory
+    7. Print summary statistics
+    
+    Args:
+        output_name: Optional custom output filename. If None, auto-detects.
+    """
     image_path = find_image()
     output_csv = get_output_csv(image_path)
     output_dir = get_image_output_dir(image_path)

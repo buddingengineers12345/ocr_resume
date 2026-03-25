@@ -1,12 +1,51 @@
 """Render HTML templates with embedded markdown to a PNG using Playwright.
 
-Builds ``generated/resume.html`` by injecting the markdown from
-``source/content.md`` into the template, applies extracted font variables to
-the resulting HTML/CSS, and renders the page to ``generated/Output_1.png``
-using headless Chromium (Playwright). Includes safety timeouts and logs.
+**Module Overview:**
+This script builds a resume PDF by combining a template HTML file with markdown
+content, extracting font size specifications from the markdown, and rendering the
+result to a PNG image using headless Chromium.
+
+**Three-stage pipeline:**
+
+1. **Font Extraction** (extract_font_vars_from_md)
+   - Parse markdown for embedded font size markers like "(font_size: 32px)"
+   - Map font sizes to semantic CSS variables (--fs-name, --fs-pill, etc.)
+   - Support section-aware extraction (work, awards, profile, contact, projects)
+
+2. **HTML/CSS Generation** (build_resume_html)
+   - Inject markdown content into template.html's DEFAULT_MD JavaScript constant
+   - Apply extracted font variables to template.css as CSS custom properties
+   - Inject font variables into HTML inline styles for pre-render parity
+   - Add auto-render hook on DOMContentLoaded
+   - Generate resume.html and resume.css in output directory
+
+3. **PNG Rendering** (render_html_to_png)
+   - Launch headless Chromium and navigate to generated resume.html
+   - Wait for JavaScript markdown renderer to complete
+   - Capture full-page screenshot
+   - Crop browser toolbars and resize to target dimensions
+   - Save final PNG with optimization
+
+**Input files:**
+- source/template.html: HTML template with DEFAULT_MD placeholder and #resume div
+- source/template.css: CSS with custom properties for font sizes
+- source/content.md: Markdown with font size markers
+
+**Output files:**
+- generated/resume.html: Injected HTML ready to render
+- generated/resume.css: CSS with applied font variables and corrected paths
+- generated/Output_1.png: Final rendered resume PNG
+
+**Safety features:**
+- Explicit timeouts on all browser and page operations (30s for page load)
+- Graceful handling of PlaywrightTimeoutError with detailed error messages
+- Comprehensive logging to file and stdout
+- Cleanup of temporary files
 
 Usage:
-     python pipeline/render/render_html.py
+     python pipeline/render/render_html.py [--template PATH] [--md PATH] [--html PATH]
+                                           [--css PATH] [--css-out PATH] [--out PATH]
+                                           [--width W] [--height H] [--no-crop]
 """
 
 import re
@@ -59,6 +98,19 @@ FONT_VAR_MAP = {
 
 
 def _extract_value_and_font(raw: str) -> tuple[str, str]:
+    """Extract value and font size from a markdown line.
+    
+    Parses a line to extract:
+    - The text value (everything after " : " separator, or the whole line if no separator)
+    - The font size (if present as "(font_size: XXpx)" at the end)
+    
+    Args:
+        raw: A markdown line potentially containing a colon separator and font size marker.
+        
+    Returns:
+        tuple[str, str]: (cleaned_value, font_size_or_empty_string)
+        Example: ("John Doe", "32px") or ("Contact", "")
+    """
     idx = raw.find(" : ")
     value = raw[idx + 3 :].strip() if idx != -1 else raw.strip()
     m = re.search(r"\(font_size\s*:\s*([0-9.]+\s*px)\)\s*$", value, flags=re.IGNORECASE)
@@ -74,7 +126,28 @@ def _extract_value_and_font(raw: str) -> tuple[str, str]:
 
 
 def extract_font_vars_from_md(md_content: str) -> dict[str, str]:
-    """Extract font sizes from markdown markers like '(font_size: 32px)'."""
+    """Extract all CSS font size variables from markdown content.
+    
+    Parses markdown structure to identify and extract font sizes attached to different
+    semantic elements (name, contact items, awards, work headers, bullets, etc.).
+    Builds a complete font variable map using the FONT_VAR_MAP dictionary.
+    Only the first occurrence of each variable is stored (set_once pattern).
+    
+    Markdown structure expected:
+    - "# Name (font_size: 32px)" → name font size
+    - "## Section : Title (font_size: 16px)" → section header font size
+    - "### Job | Company | Dates" → jobPos, jobCompany, jobDates fonts
+    - "#### Project Name (font_size: 14px)" → projName font
+    - "- Bullet item (font_size: 12px)" → bullet, awardsItem, or profileItem font
+    
+    Args:
+        md_content: Raw markdown content from content.md
+        
+    Returns:
+        dict[str, str]: Font variable map {key: "XXpx" or ""} 
+        Keys are: name, pill, contactItem, awardsItem, profileItem, 
+                  workHeader, jobPos, jobCompany, jobDates, projName, bullet
+    """
     fonts = {key: "" for key in FONT_VAR_MAP}
     section = ""
 
@@ -149,6 +222,20 @@ def extract_font_vars_from_md(md_content: str) -> dict[str, str]:
 
 
 def apply_font_vars_to_css(css_content: str, font_vars: dict[str, str]) -> str:
+    """Apply extracted font variables to CSS file by updating CSS custom properties.
+    
+    Replaces CSS custom property values (e.g., --fs-name: 32px;) with extracted
+    font sizes from markdown. Uses regex to find and replace each property definition.
+    Only updates properties that have non-empty font values in font_vars.
+    
+    Args:
+        css_content: Raw CSS text from template.css
+        font_vars: Font variable map from extract_font_vars_from_md()
+        
+    Returns:
+        str: Updated CSS with font sizes applied to custom properties.
+        Example: "--fs-name: 32px;" if font_vars["name"] == "32px"
+    """
     updated = css_content
     for key, css_var in FONT_VAR_MAP.items():
         size = font_vars.get(key, "")
@@ -160,6 +247,21 @@ def apply_font_vars_to_css(css_content: str, font_vars: dict[str, str]) -> str:
 
 
 def apply_font_vars_to_html(html_content: str, font_vars: dict[str, str]) -> str:
+    """Apply extracted font variables to HTML by injecting inline styles.
+    
+    Injects all font variables as CSS custom properties into the #resume div's inline
+    style attribute. This ensures variables are available for the renderer's MD-to-HTML
+    conversion and achieves parity with the CSS file. If #resume already has a style
+    attribute, merges the new declarations; otherwise adds a new style attribute.
+    
+    Args:
+        html_content: Raw HTML text from template.html
+        font_vars: Font variable map from extract_font_vars_from_md()
+        
+    Returns:
+        str: Updated HTML with font variables injected into #resume element's inline style.
+        Example: <div id="resume" style="--fs-name: 32px; --fs-pill: 14px; ...">
+    """
     declarations = " ".join(
         f"{FONT_VAR_MAP[key]}: {size};"
         for key, size in font_vars.items()
@@ -192,11 +294,31 @@ def build_resume_html(
     css_template_path: Path = DEFAULT_CSS_TEMPLATE,
     css_out_path: Path = DEFAULT_RESUME_CSS,
 ) -> Path:
-    """
-    Inject content.md into template.html's JS DEFAULT_MD variable, add an
-    auto-render call on DOMContentLoaded, and save the result as resume.html.
-    Also copies template.css → resume.css, adjusting font paths to be relative
-    to html_pipeline/ instead of html_info/.
+    """Build resume.html and resume.css by injecting markdown content and font variables.
+    
+    **Core workflow:**
+    1. Extract markdown content and parse all font size markers (e.g., "(font_size: 32px)")
+    2. Read template.html and template.css
+    3. Update CSS custom properties with extracted font sizes
+    4. Update HTML inline styles with font variables
+    5. Inject markdown into template's DEFAULT_MD JavaScript constant
+    6. Add DOMContentLoaded listener to auto-render markdown on page load
+    7. Save updated files as resume.html and resume.css
+    
+    **CSS path adjustments:**
+    - Template uses "./fonts/" relative path (assumes CSS is in source/)
+    - Generated resume.css lives in generated/, so paths are rewritten to
+      "../source/fonts/" to maintain correct relative paths to font files
+    
+    Args:
+        template_path: Source template HTML file
+        md_path: Markdown content file to inject
+        out_path: Output path for generated resume.html
+        css_template_path: Source template CSS file (default: source/template.css)
+        css_out_path: Output path for generated resume.css (default: generated/resume.css)
+        
+    Returns:
+        Path: The output_path after successful generation
     """
     log.info("[build] Reading template : %s", template_path)
     template_html = template_path.read_text(encoding="utf-8")
@@ -286,15 +408,35 @@ def render_html_to_png(
     height: int = 2000,
     crop_toolbar: bool = True,
 ) -> Path:
-    """
-    Render an HTML file to PNG using Playwright (Chromium, headless).
-
-    Hang-safety
-    -----------
-    * browser and page operations have explicit timeouts (ms).
-    * page.goto timeout=30000 ms – aborts if page never loads.
-    * page.wait_for_timeout(1500) – lets the JS MD-renderer finish.
-    * PlaywrightTimeoutError is caught to exit cleanly instead of hanging.
+    """Render an HTML file to PNG using Playwright (Chromium, headless).
+    
+    **Rendering workflow:**
+    1. Launch headless Chromium browser with specified viewport dimensions
+    2. Navigate to HTML file and wait for DOMContentLoaded event
+    3. Wait 1.5s for JavaScript markdown renderer to complete
+    4. Capture full-page screenshot
+    5. Crop browser toolbar from top and bottom (if enabled)
+    6. Resize to target dimensions using Lanczos resampling
+    7. Save as PNG with optimization
+    
+    **Hang-safety:**
+    * browser.launch() and page operations have explicit timeouts
+    * page.goto timeout=30000ms – aborts if page never loads
+    * page.wait_for_timeout(1500) – lets the JS MD-renderer finish
+    * PlaywrightTimeoutError is caught and logged for clean exit
+    
+    Args:
+        html_path: Path to HTML file to render
+        out_path: Output PNG file path
+        width: Viewport and final image width in pixels (default: 1414)
+        height: Viewport and final image height in pixels (default: 2000)
+        crop_toolbar: Whether to crop browser toolbar from top/bottom (default: True)
+        
+    Returns:
+        Path: The output_path after successful rendering
+        
+    Raises:
+        SystemExit: On PlaywrightTimeoutError or file I/O failures
     """
     tmp_path = Path(str(out_path) + ".raw.png")
 
@@ -350,6 +492,29 @@ def render_html_to_png(
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 def main() -> None:
+    """Main entry point: orchestrate resume HTML generation and PNG rendering.
+    
+    **High-level workflow:**
+    1. Parse command-line arguments to configure input/output paths and dimensions
+    2. Call build_resume_html() to:
+       - Extract font variables from markdown
+       - Inject markdown into HTML template
+       - Apply fonts to CSS and inline styles
+       - Generate resume.html and resume.css
+    3. Call render_html_to_png() to:
+       - Render resume.html in headless Chromium
+       - Capture screenshot and crop/resize
+       - Save final PNG output
+    
+    **Configurable parameters:**
+    - Input paths: template HTML, CSS, markdown content
+    - Output paths: resume.html, resume.css, Output PNG
+    - Render dimensions: viewport width/height and crop options
+    
+    **Logging:**
+    - Logs to generated/temp/render_html.log and stdout
+    - Provides detailed progress tracking at each stage
+    """
     parser = argparse.ArgumentParser(
         description="Build resume.html from template + content.md, then render to PNG"
     )

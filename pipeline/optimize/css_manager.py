@@ -1,11 +1,40 @@
 """css_manager — safe read/patch/restore helper for template.css.
 
-Provides an API to snapshot, modify and restore selector-scoped CSS
-properties in ``source/template.css``. Changes are written atomically and a
-snapshot stack supports easy rollback during optimization experiments.
+**Purpose:**
+Provides a safe, atomic API for reading, modifying, and restoring CSS properties
+in source/template.css during optimization. Supports selector-scoped changes,
+rollback via snapshot stack, and special helpers for shorthand properties.
 
-Supported helpers include numeric extraction, padding shorthand helpers and
-batch apply/delta semantics used by the optimizer.
+**Key features:**
+
+**Atomic writes:**
+- Uses temp file + atomic rename to prevent corruption
+- Safe for concurrent reads or unexpected interruption
+
+**Snapshot stack:**
+- snapshot() saves current state to stack, returns content
+- restore() pops stack or restores to provided content
+- restore_to_base() rolls back to first snapshot
+
+**Property management:**
+- get_value() / set_value() for generic properties
+- get_numeric() / delta() for numerical adjustments
+- Special padding shorthand handling (expands to 4-value form)
+
+**Bulk operations:**
+- apply_batch() for multi-selector atomic batch apply
+- Useful for warm-start or multiple CSS changes per iteration
+
+**Supported operations:**
+- Read/write individual properties: #id { prop: value; }
+- Numeric delta adjustments: current_value + delta
+- Padding shorthand: expands and tracks individual sides
+- CSS block extraction via regex selector matching
+
+**Limitations:**
+- Single CSS file (source/template.css)
+- Only FIRST selector match is modified
+- Properties within blocks (not comments or multi-line constructs)
 """
 
 import os
@@ -23,8 +52,16 @@ TEMPLATE_CSS = WORKSPACE / "source" / "template.css"
 
 class CSSManager:
     """
-    Manages reads and writes to template.css.
-    Instantiate once; the snapshot stack handles rollback.
+    Manages reads, writes, and rollback for template.css modifications.
+    
+    Instantiate once, use snapshot/restore stack for safe experiments.
+    All changes written atomically via temp file + rename.
+    
+    Example:
+        css = CSSManager()
+        css.snapshot()  # Save current CSS
+        css.set_value('#main', 'padding-top', 40)  # Modify
+        css.restore()  # Rollback to snapshot
     """
 
     def __init__(self, css_path: Path = TEMPLATE_CSS):
@@ -37,7 +74,17 @@ class CSSManager:
         return self.css_path.read_text(encoding="utf-8")
 
     def _write(self, content: str) -> None:
-        """Atomic write: write to temp file then rename."""
+        """Atomic write: write to temp file then rename.
+        
+        Ensures that the CSS file is never in a partially-written state,
+        preventing corruption even if the process is interrupted.
+        
+        Args:
+            content: CSS text to write
+            
+        Raises:
+            OSError: If write or rename fails
+        """
         fd, tmp = tempfile.mkstemp(
             dir=self.css_path.parent, prefix=".css_tmp_", suffix=".css"
         )
@@ -55,14 +102,23 @@ class CSSManager:
     # ── Snapshot stack ────────────────────────────────────────────────────────
 
     def snapshot(self) -> str:
-        """Save current CSS content and return it (also pushed to stack)."""
+        """Save current CSS content to stack and return it.
+        
+        Used before making experimental changes. Call restore() to rollback.
+        
+        Returns:
+            str: Current CSS content (also pushed to stack)
+        """
         content = self._read()
         self._snapshots.append(content)
         return content
 
     def restore(self, content: Optional[str] = None) -> None:
-        """
-        Restore CSS to *content* (if provided) or pop and restore from stack.
+        """Restore CSS to a specific state or pop from snapshot stack.
+        
+        Args:
+            content: If provided, restore to this exact CSS text.
+                     If None, restore from stack (LIFO).
         """
         if content is not None:
             self._write(content)
@@ -71,7 +127,10 @@ class CSSManager:
             self._write(self._snapshots.pop())
 
     def restore_to_base(self) -> None:
-        """Restore all the way back to the first snapshot."""
+        """Restore all the way back to the first snapshot (clear rollback stack).
+        
+        Useful when an optimization phase is complete and committed.
+        """
         if self._snapshots:
             self._write(self._snapshots[0])
             self._snapshots.clear()
@@ -80,11 +139,20 @@ class CSSManager:
 
     @staticmethod
     def _extract_block(css: str, selector: str) -> tuple[str, int, int]:
-        """
-        Find the CSS block for *selector* and return (block_text, start, end).
-        Handles selectors with spaces, '#', '.', ':' etc.
-        Only matches the FIRST occurrence (sufficient for this template).
-        Raises ValueError if not found.
+        """Find the CSS block for *selector* and return (block_text, start, end).
+        
+        Uses regex to match selector followed by optional whitespace and opening brace.
+        Only returns FIRST occurrence (sufficient for single-file template).
+        
+        Args:
+            css: Full CSS text
+            selector: CSS selector string (e.g., '#main', '.photo-wrap')
+            
+        Returns:
+            tuple[str, int, int]: (block_including_braces, start_offset, end_offset)
+            
+        Raises:
+            ValueError: If selector is not found in CSS
         """
         # Escape the selector for use in regex
         esc = re.escape(selector.strip())
@@ -98,9 +166,19 @@ class CSSManager:
     # ── Generic get / set ─────────────────────────────────────────────────────
 
     def get_value(self, selector: str, prop: str) -> Optional[str]:
-        """
-        Return the raw CSS value string for *prop* inside *selector*, or None.
-        E.g. get_value('#main', 'padding-top') → '59px'
+        """Return the raw CSS value string for *prop* inside *selector*, or None.
+        
+        Example:
+            get_value('#main', 'padding-top')  # → '59px'
+            get_value('.unknown', 'color')     # → None
+            
+        Args:
+            selector: CSS selector (e.g., '#main')
+            prop: Property name (e.g., 'padding-top')
+            
+        Returns:
+            str: Raw property value (without property name or semicolon)
+            None: If selector or property not found
         """
         css = self._read()
         try:
@@ -117,9 +195,21 @@ class CSSManager:
         return m.group(1).strip() if m else None
 
     def get_numeric(self, selector: str, prop: str) -> Optional[float]:
-        """
-        Return the first numeric value from the property as a float, or None.
-        E.g. ``margin-bottom: 4px`` → 4.0
+        """Return the first numeric value from the property as a float, or None.
+        
+        Extracts leading number from property value string. Useful for
+        CSS values like "59px" → 59.0 or "1.5em" → 1.5
+        
+        Example:
+            get_numeric('#main', 'padding-top')  # "59px" → 59.0
+            get_numeric('.unknown', 'color')     # → None
+            
+        Args:
+            selector: CSS selector
+            prop: Property name
+            
+        Returns:
+            float: First numeric value or None
         """
         val = self.get_value(selector, prop)
         if val is None:
@@ -233,10 +323,16 @@ class CSSManager:
     # ── Bulk apply ────────────────────────────────────────────────────────────
 
     def apply_batch(self, patches: list[tuple]) -> int:
-        """
-        Apply a list of (selector, prop, value) tuples atomically (one
-        read-modify-write per call, but the full batch is written at the end).
-        Returns number of successful patches.
+        """Apply a list of (selector, prop, value) tuples atomically.
+        
+        **Efficiency:** All changes applied in single read-modify-write
+        operation, making it safe and fast for multiple CSS updates.
+        
+        Args:
+            patches: List of (selector, prop, value) tuples to apply
+            
+        Returns:
+            int: Number of successfully applied patches
         """
         css = self._read()
         n_ok = 0

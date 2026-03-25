@@ -1,138 +1,44 @@
+/* ============================================================================
+   FONT FACES
+   ========================================================================== */
 @font-face {
   font-family: 'Helvetica World';
   src: url('./fonts/TGBonum-400.otf') format('opentype');
   font-weight: 400;
 }
+
 @font-face {
   font-family: 'Helvetica World';
   src: url('./fonts/TGBonum-400.otf') format('opentype');
   font-weight: 700;
 }
+
 @font-face {
   font-family: 'Helvetica World';
   src: url('./fonts/TGHeros-700.otf') format('opentype');
   font-weight: 400;
 }
+
 @font-face {
   font-family: 'Helvetica World';
   src: url('./fonts/TGHeros-400.otf') format('opentype');
   font-weight: 700;
 }
-/* ── Reset ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Variables ── */
+/* ============================================================================
+   CSS CUSTOM PROPERTIES (VARIABLES)
+   ========================================================================== */
 :root {
-  --sidebar-bg:   #333132;
+  /* Layout dimensions */
+  --sidebar-width: 540px;
+
+  /* Color palette */
+  --sidebar-bg: #333132;
   --sidebar-text: #e2e1e2;
-  --main-bg:      #f6f6f6;
-  --main-text:    #373536;
-  --sidebar-w:    540px;
-}
+  --main-bg: #f6f6f6;
+  --main-text: #373536;
 
-body {
-  font-family: 'Helvetica World', sans-serif;
-  background: #aaaaaa;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* ══════════════════════════════════════
-   TOOLBAR
-══════════════════════════════════════ */
-#toolbar {
-  width: 100%;
-  background: #111;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-#toolbar-title {
-  flex: 1;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: #555;
-}
-.tbtn {
-  background: #2a2a2a;
-  color: #ddd;
-  border: 1px solid #444;
-  border-radius: 5px;
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 0.15s;
-}
-.tbtn:hover { background: #444; }
-.tbtn.primary { background: #e0e0e0; color: #111; border-color: #ccc; }
-.tbtn.primary:hover { background: #fff; }
-
-/* ══════════════════════════════════════
-   MD EDITOR OVERLAY
-══════════════════════════════════════ */
-#ed-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.65);
-  z-index: 300;
-  align-items: center;
-  justify-content: center;
-}
-#ed-overlay.open { display: flex; }
-#ed-box {
-  background: #1a1a1a;
-  border-radius: 10px;
-  width: 92%; max-width: 800px;
-  max-height: 88vh;
-  display: flex; flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
-}
-#ed-head {
-  padding: 13px 20px;
-  background: #242424;
-  color: #999;
-  font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-  display: flex; justify-content: space-between; align-items: center;
-}
-#ed-hint { font-size: 10px; color: #444; font-weight: 400; letter-spacing: 0; text-transform: none; }
-#md-ta {
-  flex: 1;
-  background: #1a1a1a; color: #c0c0c0;
-  border: none; outline: none;
-  padding: 18px 22px;
-  font-family: 'Helvetica World', sans-serif;
-  font-size: 12.5px; line-height: 1.8;
-  resize: none; overflow-y: auto;
-  min-height: 200px;
-}
-#ed-foot {
-  padding: 11px 20px;
-  background: #242424;
-  display: flex; gap: 8px; justify-content: flex-end;
-}
-
-/* ══════════════════════════════════════
-   PAGE WRAPPER
-══════════════════════════════════════ */
-#pw { padding: 28px 0 60px; width: 100%; display: flex; justify-content: center; }
-
-/* ══════════════════════════════════════
-   RESUME SHELL
-══════════════════════════════════════ */
-#resume {
+  /* Typography scales (font sizes) */
   --fs-name: 84px;
   --fs-pill: 32px;
   --fs-contact-item: 18px;
@@ -144,11 +50,171 @@ body {
   --fs-job-dates: 18px;
   --fs-proj-name: 18px;
   --fs-bullet: 16px;
+}
+
+/* ============================================================================
+   GLOBAL RESET & BASE STYLES
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Helvetica World', sans-serif;
+  background: #aaa;
+  color: var(--main-text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ============================================================================
+   TOOLBAR
+   ========================================================================== */
+#toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  background: #111;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+}
+
+#toolbar-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.tbtn {
+  padding: 6px 14px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 5px;
+  color: #ddd;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s ease-out;
+}
+
+.tbtn:hover {
+  background: #444;
+}
+
+.tbtn.primary {
+  background: #e0e0e0;
+  border-color: #ccc;
+  color: #111;
+}
+
+.tbtn.primary:hover {
+  background: #fff;
+}
+
+/* ============================================================================
+   MARKDOWN EDITOR OVERLAY
+   ========================================================================== */
+#ed-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+}
+
+#ed-overlay.open {
+  display: flex;
+}
+
+#ed-box {
+  display: flex;
+  flex-direction: column;
+  width: 92%;
+  max-width: 800px;
+  max-height: 88vh;
+  background: #1a1a1a;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+#ed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  background: #242424;
+  color: #999;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#ed-hint {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #444;
+}
+
+#md-ta {
+  flex: 1;
+  min-height: 200px;
+  padding: 18px 22px;
+  background: #1a1a1a;
+  border: none;
+  outline: none;
+  color: #c0c0c0;
+  font-family: 'Helvetica World', sans-serif;
+  font-size: 12.5px;
+  line-height: 1.8;
+  resize: none;
+  overflow-y: auto;
+}
+
+#ed-foot {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 11px 20px;
+  background: #242424;
+}
+
+/* ============================================================================
+   PAGE WRAPPER & RESUME SHELL
+   ========================================================================== */
+#pw {
+  width: 100%;
+  padding: 28px 0 60px;
+  display: flex;
+  justify-content: center;
+}
+
+#resume {
   width: 1414px;
+  min-height: 2000px;
   background: var(--main-bg);
   display: flex;
-  min-height: 2000px;
-  box-shadow: 0 6px 50px rgba(0,0,0,0.35);
+  box-shadow: 0 6px 50px rgba(0, 0, 0, 0.35);
 }
 
 /* ══════════════════════════════════════
@@ -224,7 +290,7 @@ body {
 
 /* — Awards — */
 #sb-awards {
-  width: 303px; padding: 0px 0px 0px 0px;
+  width: 260px; padding: 0px 0px 0px 0px;
   margin-left: 0;
   display: flex;
   flex-direction: column;

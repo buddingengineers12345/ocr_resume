@@ -1,13 +1,41 @@
 #!/usr/bin/env python3
 """object_extraction — detect structural page elements using OpenCV.
 
-Finds contours representing lines, boxes and dividers via morphology and
-edge detection, filters those that overlap text regions and writes structural
-rows into the objects CSV. Can operate with or without a prior text-extraction
-pass; existing text rows are respected to avoid overwriting.
+**Purpose:**
+Finds lines, boxes, dividers and other non-text structural elements using
+morphological operations and edge detection. Filters results by text region
+overlaps and writes them to objects.csv. Works with or without prior text
+extraction (respects existing text rows).
 
-Usage:
-        python pipeline/ocr/object_extraction.py
+**Detection strategy:**
+1. Convert image to grayscale
+2. Apply adaptive threshold for lighting invariance
+3. Light morphology to remove noise without merging objects
+4. Canny edge detection to preserve object boundaries
+5. Combine thresholded regions and edges
+6. Find contours and extract bounding boxes
+7. Filter overlaps with detected text regions
+8. Estimate foreground/background colors
+9. Write structural objects to CSV
+
+**Noise filtering:**
+- Removes contours with area < 20 pixels
+- Skips objects that cover > 90% of the image (page edges/sidebars)
+- Skips objects overlapping text regions (>50% coverage threshold)
+
+**Key feature:** Can optionally use text_cleaned.png (with text regions pre-filled)
+for cleaner structural detection. Falls back to original image if unavailable.
+
+**Input files:**
+- source/references/Page_1.png (original image)
+- generated/ocr/{image_stem}/text_cleaned.png (optional, preferred)
+- generated/ocr/{image_stem}/objects.csv (for existing text rows)
+
+**Output files:**
+- generated/ocr/{image_stem}/objects.csv (structural objects appended)
+
+**Usage:**
+    python pipeline/ocr/object_extraction.py
 """
 
 import sys
@@ -29,21 +57,33 @@ from utils import (
 
 
 def detect_structural(image_bgr, text_boxes: list, image_original=None) -> list:
-    """
-    Detect structural elements via adaptive thresholding and edge detection.
+    """Detect structural elements via adaptive thresholding and edge detection.
 
-    Strategy:
-      1. Convert to grayscale.
-      2. Apply adaptive threshold (better separation for varying lighting).
-      3. Light morphology to remove noise without merging objects.
-      4. Apply Canny edge detection to preserve boundaries.
-      5. Combine region and edge info.
-      6. Find contours; discard those dominated by text regions.
+    **Two-image mode:**
+    - image_bgr: Detection/processing image (can be text_cleaned.png with text erased)
+    - image_original: Color sampling image (original, for accurate colors)
+    
+    This allows clean structural detection on text-removed image while maintaining
+    accurate color estimates from the original.
 
-    *image_original* is used for colour estimation when provided (e.g. when
-    *image_bgr* is the text-cleaned variant).  Falls back to *image_bgr*.
-
-    Returns a list of dicts: {object_type, text, x, y, w, h, color, bg_color}.
+    **Processing pipeline:**
+    1. Convert to grayscale
+    2. Apply adaptive Gaussian threshold (robust to lighting variations)
+    3. Light morphology (remove noise without merging structures)
+    4. Canny edge detection (preserve structure boundaries)
+    5. Combine thresholded regions and edges
+    6. Find contours and extract bounding rectangles
+    7. Filter by size (< 20px), coverage (> 90%), and text overlap (> 50%)
+    8. Estimate colors from regions
+    
+    Args:
+        image_bgr: OpenCV BGR image for detection (can be text-cleaned)
+        text_boxes: List of existing text boxes to filter overlaps
+        image_original: Optional original image for color estimation (BGR)
+        
+    Returns:
+        list[dict]: Structural objects with keys: object_type, text (empty),
+        x, y, w, h, color, bg_color
     """
     import cv2
     import numpy as np
@@ -105,6 +145,18 @@ def detect_structural(image_bgr, text_boxes: list, image_original=None) -> list:
 
 
 def run():
+    """Load image, detect structural elements, append to objects CSV.
+    
+    **Workflow:**
+    1. Find source image and output directory
+    2. Check if text_cleaned.png exists (better structural detection)
+    3. Use cleaned or original image accordingly
+    4. Load existing text boxes from CSV for overlap filtering
+    5. Detect structural elements using detect_structural()
+    6. Update CSV with structural object rows
+    7. Create annotated visualization (annotated_objects.png)
+    8. Print summary statistics
+    """
     import cv2
 
     image_source = find_image()

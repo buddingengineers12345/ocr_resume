@@ -1,12 +1,29 @@
 #!/usr/bin/env python3
 """text_cleanup — hide detected text regions by filling with background colour.
 
-Reads text bounding boxes from ``objects.csv``, estimates the background
-colour for each region and fills them so that structural detectors can find
-non-text elements without text interference. Produces ``text_cleaned.png``.
+**Purpose:**
+After text extraction, fills all detected text bounding boxes with their
+estimated background color to "erase" text. This cleaned image is used for
+structural element detection so text pixels don't interfere with shape finding.
 
-Usage:
-        python pipeline/ocr/text_cleanup.py
+**Workflow:**
+1. Read input image (source/references/Page_1.png)
+2. Load text bounding boxes from generated/ocr/{image_stem}/objects.csv
+3. For each text object:
+   - Estimate its background color using estimate_background_color()
+   - Fill the bounding box region with that color
+4. Write cleaned image as generated/ocr/{image_stem}/text_cleaned.png
+5. Print progress and statistics
+
+**Input files:**
+- source/references/Page_1.png (or IMAGE_PATH env var)
+- generated/ocr/{image_stem}/objects.csv (with text objects)
+
+**Output files:**
+- generated/ocr/{image_stem}/text_cleaned.png: Same image with text boxes filled
+
+**Usage:**
+    python pipeline/ocr/text_cleanup.py
 """
 
 import sys
@@ -34,13 +51,19 @@ def estimate_background_color(
 ) -> tuple[int, int, int]:
     """Estimate the background colour inside a bounding box.
 
-    Strategy:
-    1. Sample the inner border (1 px from the box edge) — closest to where
-       background colour is likely intact.
-    2. If insufficient samples, fall back to the outer margin with IQR
-       outlier filtering and bilateral denoising.
+    **Two-tier strategy:**
+    1. **Primary:** Sample inner border (1px from box edge) where background is
+       likely intact without text interference
+    2. **Fallback:** Use outer margin with IQR outlier filtering and bilateral
+       denoising (for reliabiliy when inner border is too small)
 
-    Returns a BGR tuple of ints.
+    Args:
+        image_bgr: OpenCV image array (BGR, uint8)
+        x, y, w, h: Bounding box coordinates and dimensions
+        margin: Pixel distance for outer margin sampling (default 8)
+
+    Returns:
+        tuple[int, int, int]: Estimated (B, G, R) color values
     """
     img_h, img_w = image_bgr.shape[:2]
 
@@ -130,6 +153,16 @@ def estimate_background_color(
 
 
 def main() -> None:
+    """Load image and CSV, fill text regions with background color, save cleaned image.
+    
+    **Execution:**
+    1. Find input image and validate objects.csv exists
+    2. Load all text objects from CSV
+    3. Make a copy of the original image for in-place modification
+    4. For each text object, estimate background and fill with cv2.rectangle()
+    5. Save filled image as text_cleaned.png in output directory
+    6. Print summary statistics (image size, number of regions cleaned)
+    """
     image_path = find_image()
     output_csv = get_output_csv(image_path)
     output_dir = get_image_output_dir(image_path)
