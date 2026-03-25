@@ -118,7 +118,10 @@ def render_and_score(label: str = "") -> dict:
 _LOG_FIELDNAMES = [
     "phase", "iteration", "composite", "alignment_pct", "ssim",
     "mean_excess", "n_aligned", "n_pairs",
-    "mean_dy_main", "mean_dy_sidebar", "mean_dx_contact", "drift_slope",
+    "mean_dy_main", "mean_dy_sidebar", "mean_dx_contact",
+    "mean_dx_awards", "mean_dy_awards", "award_alignment_pct", "n_award_pairs",
+    "context_alignment_pct", "weighted_alignment_pct", "n_context_pairs",
+    "drift_slope",
     "mean_height_scale", "mean_width_scale",
     "applied_selector", "applied_prop", "applied_delta",
 ]
@@ -150,6 +153,13 @@ def _log_row(phase: str, iteration: int, m: dict,
         "mean_dy_main":       m["mean_dy_main"],
         "mean_dy_sidebar":    m["mean_dy_sidebar"],
         "mean_dx_contact":    m["mean_dx_contact"],
+        "mean_dx_awards":     m["mean_dx_awards"],
+        "mean_dy_awards":     m["mean_dy_awards"],
+        "award_alignment_pct": m["award_alignment_pct"],
+        "n_award_pairs":      m["n_award_pairs"],
+        "context_alignment_pct": m["context_alignment_pct"],
+        "weighted_alignment_pct": m["weighted_alignment_pct"],
+        "n_context_pairs":    m["n_context_pairs"],
         "drift_slope":        m["drift_slope"],
         "mean_height_scale":  m["mean_height_scale"],
         "mean_width_scale":   m["mean_width_scale"],
@@ -197,9 +207,9 @@ WARM_START_PATCHES = [
     ("#sb-contact",     "padding-left",      126),
     # Also reduce right to avoid clipping
     ("#sb-contact",     "padding-right",     30),
-    # Sidebar: award text 62 px too far LEFT → padding-left 49→111
-    ("#sb-awards",      "padding-left",      111),
-    ("#sb-awards",      "padding-right",     30),
+    # Sidebar awards should be anchored to the AWARDS pill block.
+    ("#sb-awards",      "padding-left",      0),
+    ("#sb-awards",      "padding-right",     0),
 ]
 
 def phase0_warm_start(mgr: CSSManager, dry_run: bool = False) -> dict:
@@ -311,7 +321,7 @@ TWEAK_CATALOGUE = [
     ("#sb-contact",      "margin-bottom",    [-6, -4, -2, 2, 4, 6, 8, 10]),
     # ── Sidebar X (contact/award icon indent) ───────────────────────────────
     ("#sb-contact",      "padding-left",     [-10, -5, -4, -2, 2, 4, 5, 10]),
-    ("#sb-awards",       "padding-left",     [-10, -5, -4, -2, 2, 4, 5, 10]),
+    ("#sb-awards",       "padding-left",     [-30, -20, -10, -5, -4, -2, 2, 4, 5, 10, 20, 30]),
     (".adot",            "margin-right",     [-4, -2, 2, 4]),
     (".cicon",           "margin-right",     [-2, 2, 4]),
     # ── Company / dates X ────────────────────────────────────────────────────
@@ -341,16 +351,28 @@ def _direction_filter(deltas: list, m: dict, selector: str, prop: str) -> list:
     md_y = m.get("mean_dy_main", 0)
     sb_y = m.get("mean_dy_sidebar", 0)
     sb_x = m.get("mean_dx_contact", 0)
+    aw_x = m.get("mean_dx_awards", sb_x)
+    aw_y = m.get("mean_dy_awards", sb_y)
     drift = m.get("drift_slope", 0)
     h_scale = m.get("mean_height_scale", 0)
 
     # Map property → which metric it primarily affects
     # Positive delta → y increases (items move down), x increases (items move right)
+    is_award_selector = selector in ("#sb-awards", ".adot", ".arow")
+
     prop_region = {
         "padding-top": "main_y",   "padding-bottom": "sb_y",  "padding-left": "main_x",
         "margin-bottom": None,      "line-height": "drift",    "letter-spacing": "company_x",
         "margin-right": None,       "font-size": "font_scale",  "width": None,
     }.get(prop)
+
+    if is_award_selector:
+        if prop == "padding-left":
+            prop_region = "aw_x"
+        elif prop in ("margin-bottom", "font-size"):
+            prop_region = "aw_y"
+        elif prop == "margin-right":
+            prop_region = "aw_x"
 
     if prop_region == "main_y":
         # main items are too LOW (md_y > 0) → decrease padding-top → negative delta preferred
@@ -360,6 +382,14 @@ def _direction_filter(deltas: list, m: dict, selector: str, prop: str) -> list:
         # sidebar items are too HIGH (sb_y < 0) → increase padding-bottom → positive delta
         if sb_y < -3: return [d for d in deltas if d > 0] or deltas
         if sb_y > 3:  return [d for d in deltas if d < 0] or deltas
+    elif prop_region == "aw_x":
+        # Award rows too far left (negative) → increase x via positive delta.
+        if aw_x < -3: return [d for d in deltas if d > 0] or deltas
+        if aw_x > 3:  return [d for d in deltas if d < 0] or deltas
+    elif prop_region == "aw_y":
+        # Award rows too high (negative) → positive deltas on spacing/size.
+        if aw_y < -3: return [d for d in deltas if d > 0] or deltas
+        if aw_y > 3:  return [d for d in deltas if d < 0] or deltas
     elif prop_region == "drift":
         # drift_slope > 0 → bullet spacing too large → decrease line-height
         if drift > 0.005: return [d for d in deltas if d < 0] or deltas

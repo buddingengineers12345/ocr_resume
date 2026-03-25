@@ -7,16 +7,18 @@
 #   2. Render   – Render HTML to PNG (1414x2000)
 #   3. OCR      – Perform text/object extraction on rendered image
 #   4. Optimize – Align rendered resume to reference via CSS tweaking
+#   5. Compare  – Generate visual comparison artifacts against reference
 #
 # Usage:
-#   ./pipeline.sh [extract|render|ocr|optimize|full|dry-run]
+#   ./pipeline.sh [extract|render|ocr|optimize|compare|full|dry-run]
 #
 # Modes:
 #   extract      – Stage 1 only: extract resume fields from source/content.md
 #   render       – Stage 2 only: render HTML template to PNG
 #   ocr          – Stage 3 only: run OCR pipeline on source/references/ images
 #   optimize     – Stage 4 only: align rendered resume to reference via CSS
-#   full         – All stages (1-4) sequentially
+#   compare      – Stage 5 only: generate side-by-side, overlay, diff heatmap
+#   full         – All stages (1-5) sequentially
 #   dry-run      – Print what would run without executing
 #
 # Requirements:
@@ -32,6 +34,7 @@
 #   ├── Output_1.png          # Rendered resume
 #   ├── resume.html           # Built HTML
 #   ├── resume.css            # Final CSS
+#   ├── comparison/           # Visual comparison images
 #   └── ocr/                  # OCR results per image
 #       ├── Output_1/objects.csv
 #       └── Page_1/objects.csv
@@ -253,6 +256,34 @@ stage_optimize() {
     fi
 }
 
+stage_compare() {
+    log_step "STAGE 5: Visual Comparison Artifacts"
+
+    if [[ ! -f "$WORKSPACE/pipeline/optimize/visual_comparison.py" ]]; then
+        log_error "visual_comparison.py not found"
+        return 1
+    fi
+
+    if [[ ! -f "$WORKSPACE/generated/Output_1.png" ]]; then
+        log_error "generated/Output_1.png not found. Run stage 2 (render) first."
+        return 1
+    fi
+
+    if [[ ! -f "$WORKSPACE/source/references/Page_1.png" ]]; then
+        log_error "source/references/Page_1.png not found"
+        return 1
+    fi
+
+    log "Generating overlay, side-by-side, and heatmap comparison images …"
+    run_cmd "$PYTHON" "$WORKSPACE/pipeline/optimize/visual_comparison.py" || return 1
+
+    if [[ -f "$WORKSPACE/generated/comparison/overlay_comparison.png" ]] && \
+       [[ -f "$WORKSPACE/generated/comparison/side_by_side_comparison.png" ]] && \
+       [[ -f "$WORKSPACE/generated/comparison/diff_heatmap.png" ]]; then
+        log_success "Visual comparison artifacts saved to generated/comparison/"
+    fi
+}
+
 # ────────────────────────────────────────────────────────────────────────────
 # MAIN
 # ────────────────────────────────────────────────────────────────────────────
@@ -289,23 +320,29 @@ main() {
             ;;
         optimize)
             stage_optimize || return 1
+            stage_compare || return 1
+            ;;
+        compare)
+            stage_compare || return 1
             ;;
         full)
             stage_extract || return 1
             stage_render || return 1
             stage_ocr || return 1
             stage_optimize || return 1
+            stage_compare || return 1
             ;;
         *)
             log_error "Unknown mode: $MODE"
             echo ""
-            echo "Usage: $0 [extract|render|ocr|optimize|full|dry-run]"
+            echo "Usage: $0 [extract|render|ocr|optimize|compare|full|dry-run]"
             echo ""
             echo "Modes:"
             echo "  extract      – Stage 1: Extract fields from markdown"
             echo "  render       – Stage 2: Render HTML to PNG"
             echo "  ocr          – Stage 3: OCR and object detection"
             echo "  optimize     – Stage 4: CSS alignment optimization"
+            echo "  compare      – Stage 5: Generate visual comparison images"
             echo "  full         – Run all stages sequentially (default)"
             echo "  dry-run      – Show what would run without executing"
             echo ""
